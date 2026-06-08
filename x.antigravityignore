@@ -1,0 +1,54 @@
+# Ignore dependencies (AI does not need to index third-party packages)
+
+node_modules/
+bower_components/
+
+# Ignore build artifacts (generated output, not source code)
+
+dist/
+build/
+.next/
+out/
+
+# Ignore coverage reports (generated test data)
+
+coverage/
+
+# Ignore logs (not useful for project understanding)
+
+*.log
+
+# Ignore lock files (dependency resolution metadata)
+
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Ignore environment files (sensitive configuration)
+
+.env
+.env.local
+.env.production
+
+# Ignore OS-generated files
+
+.DS_Store
+Thumbs.db
+
+# Ignore generated exports and temporary files
+
+exports/
+temp/
+tmp/
+
+# Ignore large video files (AI does not need to process media assets)
+
+*.mp4
+*.mov
+*.avi
+
+# Ignore archive files (compressed assets and backups)
+
+*.zip
+*.rar
+*.7z

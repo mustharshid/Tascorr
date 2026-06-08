@@ -1,0 +1,388 @@
+// Prisma schema for Tascorr targeting MySQL/MariaDB on Plesk.
+// Designed according to Section 8 & 9.3.3 database standards of PROJECT_CONSTITUTION_V5.md.
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. Tenants (Organization workspaces)
+model Tenant {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  name                    String                    @db.VarChar(255)
+  subscriptionTier        Int                       @default(1) @db.TinyInt // Tier 1, 2, 3
+  status                  String                    @default("active") @db.VarChar(50) // active, suspended
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
+  
+  // Relations
+  users                   User[]
+  ranks                   Rank[]
+  departments             Department[]
+  tasks                   Task[]
+  subtasks                Subtask[]
+  taskAssignments         TaskAssignment[]
+  taskComments            TaskComment[]
+  blockers                Blocker[]
+  crossDeptAuthorizations CrossDeptAuthorization[]
+  delegations             Delegation[]
+  notifications           Notification[]
+  auditLogs               AuditLog[]
+  taskTemplates           TaskTemplate[]
+  processPackages         ProcessPackage[]
+
+  @@map("tenants")
+}
+
+// 2. Users (All user accounts across all tenants)
+model User {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  email                   String                    @unique @db.VarChar(255)
+  passwordHash            String                    @map("password_hash") @db.VarChar(255)
+  firstName               String                    @map("first_name") @db.VarChar(100)
+  lastName                String                    @map("last_name") @db.VarChar(100)
+  rankId                  Int                       @map("rank_id") @db.UnsignedInt
+  departmentId            Int?                      @map("department_id") @db.UnsignedInt
+  managerId               Int?                      @map("manager_id") @db.UnsignedInt
+  status                  String                    @default("active") @db.VarChar(50) // active, deactivated
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
+  deletedAt               DateTime?                 @map("deleted_at") // Soft delete allowed for users
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  rank                    Rank                      @relation(fields: [rankId], references: [id], onDelete: Restrict)
+  department              Department?               @relation("DepartmentMembers", fields: [departmentId], references: [id], onDelete: Restrict)
+  manager                 User?                     @relation("DirectReports", fields: [managerId], references: [id], onDelete: Restrict)
+  reports                 User[]                    @relation("DirectReports")
+
+  
+  // Tasks where this user is the creator
+  createdTasks            Task[]                    @relation("CreatedTasks")
+  // Tasks where this user is the primary assignee or in task assignments
+  assignedTasks           TaskAssignment[]          @relation("AssignedUser")
+  reassignedByTasks       TaskAssignment[]          @relation("ReassignedByUser")
+  
+  // Audit logs created by this user
+  createdAuditLogs        AuditLog[]                @relation("ActorUser")
+  
+  // Other relations
+  headedDepartments       Department[]              @relation("DepartmentHead")
+  blockersReported        Blocker[]                 @relation("BlockerReporter")
+  taskComments            TaskComment[]
+  createdTemplates        TaskTemplate[]            @relation("TemplateCreator")
+  delegationsGiven        Delegation[]              @relation("DelegatorUser")
+  delegationsReceived     Delegation[]              @relation("DelegateeUser")
+  notifications           Notification[]            @relation("NotificationRecipient")
+  
+  // Cross-dept requests
+  requestedAuthorizations CrossDeptAuthorization[]  @relation("AuthRequester")
+  targetAuthorizations    CrossDeptAuthorization[]  @relation("AuthTargetUser")
+
+  @@map("users")
+}
+
+// 3. Ranks (Configurable rank levels per tenant)
+model Rank {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  title                   String                    @db.VarChar(100)
+  level                   Int                       @db.UnsignedInt // Lower integer = higher authority
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  users                   User[]
+
+  @@unique([tenantId, level])
+  @@map("ranks")
+}
+
+// 4. Departments (Department definitions per tenant)
+model Department {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  name                    String                    @db.VarChar(255)
+  headUserId              Int?                      @map("head_user_id") @db.UnsignedInt
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
+  deletedAt               DateTime?                 @map("deleted_at") // Soft delete allowed for departments
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  headUser                User?                     @relation("DepartmentHead", fields: [headUserId], references: [id], onDelete: Restrict)
+  members                 User[]                    @relation("DepartmentMembers")
+  tasks                   Task[]
+  authorizations          CrossDeptAuthorization[]
+
+  @@map("departments")
+}
+
+// 5. Tasks (Core task records)
+model Task {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  title                   String                    @db.VarChar(255)
+  description             String                    @db.Text
+  status                  String                    @default("Pending") @db.VarChar(50) // Pending, In Progress, Blocked, Under Review, Completed
+  priority                String                    @db.VarChar(50) // Critical, High, Medium, Low
+  dueDate                 DateTime                  @map("due_date")
+  createdById             Int                       @map("created_by_id") @db.UnsignedInt
+  departmentId            Int?                      @map("department_id") @db.UnsignedInt // department scoping
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
+  // Soft-deletes are PROHIBITED for tasks (NNR-6)
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  creator                 User                      @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: Restrict)
+  department              Department?               @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  
+  subtasks                Subtask[]
+  assignments             TaskAssignment[]
+  comments                TaskComment[]
+  blockers                Blocker[]
+  
+  // Dependency relationships
+  prerequisites           TaskDependency[]          @relation("PrerequisiteTask")
+  dependents              TaskDependency[]          @relation("DependentTask")
+
+  @@map("tasks")
+}
+
+// 6. Subtasks (Child tasks belonging to parent tasks)
+model Subtask {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  taskId                  Int                       @map("task_id") @db.UnsignedInt
+  title                   String                    @db.VarChar(255)
+  status                  String                    @default("Pending") @db.VarChar(50) // Pending, In Progress, Completed
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
+  // Soft-deletes are PROHIBITED for subtasks
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  task                    Task                      @relation(fields: [taskId], references: [id], onDelete: Restrict)
+
+  @@map("subtasks")
+}
+
+// 7. Task Dependencies (Prerequisite relationships between tasks)
+model TaskDependency {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  taskId                  Int                       @map("task_id") @db.UnsignedInt // The task that depends on another
+  prerequisiteTaskId      Int                       @map("prerequisite_task_id") @db.UnsignedInt // The task that must be completed first
+  createdAt               DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  task                    Task                      @relation("DependentTask", fields: [taskId], references: [id], onDelete: Restrict)
+  prerequisiteTask        Task                      @relation("PrerequisiteTask", fields: [prerequisiteTaskId], references: [id], onDelete: Restrict)
+
+  @@unique([taskId, prerequisiteTaskId])
+  @@map("task_dependencies")
+}
+
+// 8. Task Assignments / Assignment History (Supports reassignment trail & multiple assignees)
+model TaskAssignment {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  taskId                  Int                       @map("task_id") @db.UnsignedInt
+  userId                  Int                       @map("user_id") @db.UnsignedInt // Active assignee
+  assignedAt              DateTime                  @default(now()) @map("assigned_at")
+  
+  // Reassignment tracking
+  reassignedFromUserId    Int?                      @map("reassigned_from_user_id") @db.UnsignedInt
+  reassignmentReason      String?                   @map("reassignment_reason") @db.Text
+  reassignedById          Int?                      @map("reassigned_by_id") @db.UnsignedInt
+  reassignedAt            DateTime?                 @map("reassigned_at")
+  isActive                Boolean                   @default(true) @map("is_active")
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  task                    Task                      @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  user                    User                      @relation("AssignedUser", fields: [userId], references: [id], onDelete: Restrict)
+  reassignedByUser        User?                     @relation("ReassignedByUser", fields: [reassignedById], references: [id], onDelete: Restrict)
+
+  @@map("task_assignments")
+}
+
+// 9. Task Comments (Comments attached to tasks)
+model TaskComment {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  taskId                  Int                       @map("task_id") @db.UnsignedInt
+  authorId                Int                       @map("author_id") @db.UnsignedInt
+  content                 String                    @db.Text
+  createdAt               DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  task                    Task                      @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  author                  User                      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@map("task_comments")
+}
+
+// 10. Blockers (Formal blocker submissions and resolutions)
+model Blocker {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  taskId                  Int                       @map("task_id") @db.UnsignedInt
+  reporterId              Int                       @map("reporter_id") @db.UnsignedInt
+  description             String                    @db.Text
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  
+  // Resolution columns
+  resolvedAt              DateTime?                 @map("resolved_at")
+  resolutionComment       String?                   @map("resolution_comment") @db.Text
+  resolvedById            Int?                      @map("resolved_by_id") @db.UnsignedInt
+  // Soft-deletes are PROHIBITED for blocker reports (NNR-3, Section 8)
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  task                    Task                      @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  reporter                User                      @relation("BlockerReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+
+  @@map("blockers")
+}
+
+// 11. Cross-Department Authorizations (Requests, approvals, denials, and expirations)
+model CrossDeptAuthorization {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  requesterId             Int                       @map("requester_id") @db.UnsignedInt
+  targetUserId            Int                       @map("target_user_id") @db.UnsignedInt // The user whose labor is requested
+  departmentId            Int                       @map("department_id") @db.UnsignedInt // The department whose head must authorize
+  scope                   String                    @db.VarChar(50) // single-use, 7-day, 30-day, project-based
+  status                  String                    @default("pending") @db.VarChar(50) // pending, approved, denied, expired
+  expiresAt               DateTime?                 @map("expires_at")
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  requester               User                      @relation("AuthRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  targetUser              User                      @relation("AuthTargetUser", fields: [targetUserId], references: [id], onDelete: Restrict)
+  department              Department                @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+
+  @@map("cross_dept_authorizations")
+}
+
+// 12. Approval Chain Steps (Enterprise Approval Mode chain steps)
+model ApprovalChainStep {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  authRequestId           Int                       @map("auth_request_id") @db.UnsignedInt
+  approverRankLevel       Int                       @map("approver_rank_level") @db.UnsignedInt
+  status                  String                    @default("pending") @db.VarChar(50) // pending, approved, rejected
+  stepOrder               Int                       @map("step_order") @db.UnsignedInt
+  actedAt                 DateTime?                 @map("acted_at")
+  comments                String?                   @db.Text
+
+  @@map("approval_chain_steps")
+}
+
+// 13. Delegations (Temporary delegation records)
+model Delegation {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  delegatorId             Int                       @map("delegator_id") @db.UnsignedInt
+  delegateeId             Int                       @map("delegatee_id") @db.UnsignedInt
+  scope                   String                    @db.VarChar(255) // full, billing, tasks, configuration
+  validFrom               DateTime                  @map("valid_from")
+  validTo                 DateTime                  @map("valid_to")
+  createdAt               DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  delegator               User                      @relation("DelegatorUser", fields: [delegatorId], references: [id], onDelete: Restrict)
+  delegatee               User                      @relation("DelegateeUser", fields: [delegateeId], references: [id], onDelete: Restrict)
+
+  @@map("delegations")
+}
+
+// 14. Notifications (In-app notification queue)
+model Notification {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  recipientId             Int                       @map("recipient_id") @db.UnsignedInt
+  title                   String                    @db.VarChar(255)
+  message                 String                    @db.Text
+  isRead                  Boolean                   @default(false) @map("is_read")
+  createdAt               DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  recipient               User                      @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+
+  @@map("notifications")
+}
+
+// 15. Audit Log (Immutable append-only audit trail)
+model AuditLog {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  actorId                 Int                       @map("actor_id") @db.UnsignedInt // The user who performed the action
+  action                  String                    @db.VarChar(255) // e.g. TASK_CREATE, TASK_REASSIGN
+  entityType              String                    @map("entity_type") @db.VarChar(100) // e.g. User, Task, Blocker
+  entityId                Int                       @map("entity_id") @db.UnsignedInt
+  metadata                String?                   @db.Text // JSON metadata of the changes
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  // Soft-deletes are PROHIBITED for audit_log (NNR-2, Section 8)
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  actor                   User                      @relation("ActorUser", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@map("audit_log")
+}
+
+// 16. Task Templates (Reusable task template definitions)
+model TaskTemplate {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  title                   String                    @db.VarChar(255)
+  description             String                    @db.Text
+  priority                String                    @db.VarChar(50)
+  roleLevelOffset         Int                       @map("role_level_offset") @db.UnsignedInt // target rank level to assign to
+  dueDateOffsetDays       Int                       @map("due_date_offset_days") @db.UnsignedInt
+  createdById             Int                       @map("created_by_id") @db.UnsignedInt
+  createdAt               DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  creator                 User                      @relation("TemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@map("task_templates")
+}
+
+// 17. Process Packages (Operational process package definitions)
+model ProcessPackage {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  name                    String                    @db.VarChar(255)
+  description             String                    @db.Text
+  createdAt               DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@map("process_packages")
+}
+
+// 18. Platform Config (Platform-level configuration: version, superadmin settings)
+model PlatformConfig {
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  systemVersion           String                    @default("5.0") @map("system_version") @db.VarChar(20)
+  maintenanceMode         Boolean                   @default(false) @map("maintenance_mode")
+  updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
+
+  @@map("platform_config")
+}

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TassCorr - Multi-tenant task delegation and workforce accountability platform. Assign it. Track it. Own it.">
+  <title>TassCorr - Assign it. Track it. Own it.</title>
+  <!-- Favicons -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="/favicon-16.png" type="image/png" sizes="16x16">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles/design-system.css">
+</head>
+<body>
+  <div id="app-layout">
+    <!-- Sidebar - Desktop navigation (hidden on mobile) -->
+    <aside class="app-sidebar" id="sidebar">
+      <div class="sidebar-slot sidebar-top">
+        <img src="/tassCorr_logo.png" alt="TassCorr Logo" class="sidebar-logo" id="brand-logo" onerror="this.style.display='none'">
+        <span class="sidebar-brand">TassCorr</span>
+      </div>
+      
+      <nav class="sidebar-slot sidebar-middle" id="desktop-nav">
+        <!-- Rendered dynamically by navigation foundations in main.js -->
+      </nav>
+      
+      <div class="sidebar-slot sidebar-bottom" id="desktop-bottom-nav">
+        <!-- Rendered dynamically by navigation foundations in main.js -->
+      </div>
+    </aside>
+
+    <!-- Main Workspace Container -->
+    <div class="app-container">
+      <!-- Header Bar -->
+      <header class="app-header">
+        <div class="header-left">
+          <button class="sidebar-toggle-btn" id="sidebar-toggle" aria-label="Toggle Sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+          <div class="header-breadcrumbs" id="breadcrumbs">
+            <span class="body-text" style="font-weight: 500;">Workspace</span>
+          </div>
+        </div>
+        
+        <div class="header-right">
+          <button class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle Theme">
+            <!-- Light/Dark icon (default moon for light mode) -->
+            <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 18px; height: 18px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+            </svg>
+          </button>
+          <div id="user-identity-badge" style="display: flex; align-items: center; gap: 8px;">
+            <div class="pill-badge status-info" style="font-weight: 500; padding: 4px 8px; border-radius: var(--radius-md);">
+              <span class="badge-dot"></span>
+              <span id="header-user-role">Superadmin</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Dynamic View Area -->
+      <main class="app-content" id="view-root">
+        <!-- Rendered view injected here -->
+      </main>
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar (hidden on desktop) -->
+    <nav class="mobile-nav-bar" id="mobile-nav">
+      <!-- Rendered dynamically by navigation foundations in main.js -->
+    </nav>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
