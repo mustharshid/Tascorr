@@ -27,44 +27,91 @@ export function renderDashboardView() {
 
       <!-- Live Dashboard Content Container -->
       <div id="dashboard-content" style="display: none; flex-direction: column; gap: 32px;">
-        <!-- TOP ROW: Summary Metrics -->
-        <div class="dashboard-grid" id="dashboard-metrics-grid">
-          <!-- Populated dynamically -->
+        
+        <!-- ============================================== -->
+        <!-- DESKTOP DASHBOARD (Hidden on mobile)           -->
+        <!-- ============================================== -->
+        <div class="desktop-only" style="display: flex; flex-direction: column; gap: 32px; width: 100%;">
+          <!-- TOP ROW: Summary Metrics -->
+          <div class="dashboard-grid" id="dashboard-metrics-grid">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- SECOND ROW: Analytics & Activity -->
+          <div class="dashboard-grid">
+            <!-- Team Workload Allocation -->
+            <div class="grid-col-6 widget-card" style="display: flex; flex-direction: column;">
+              <h3 class="card-title" style="margin-bottom: 16px;">Team Workload Allocation</h3>
+              <div id="workload-list" style="display: flex; flex-direction: column; gap: 16px; flex: 1;">
+              </div>
+            </div>
+
+            <!-- Departmental Activity -->
+            <div class="grid-col-6 widget-card">
+              <h3 class="card-title" style="margin-bottom: 16px;">Departmental Productivity Index</h3>
+              <div id="departmental-list" style="display: flex; flex-direction: column; gap: 12px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- THIRD ROW: Recent Logs & Notifications -->
+          <div class="dashboard-grid">
+            <!-- Recent Task Activity Log -->
+            <div class="grid-col-8 widget-card">
+              <h3 class="card-title" style="margin-bottom: 16px;">Recent Organizational Activity</h3>
+              <div id="activity-log-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 300px; overflow-y: auto;">
+              </div>
+            </div>
+
+            <!-- Notification Matrix -->
+            <div class="grid-col-4 widget-card">
+              <h3 class="card-title" style="margin-bottom: 16px;">Notification Matrix</h3>
+              <div id="notifications-list" style="display: flex; flex-direction: column; gap: 12px;">
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- SECOND ROW: Analytics & Activity -->
-        <div class="dashboard-grid">
-          <!-- Team Workload Allocation -->
-          <div class="grid-col-6 widget-card" style="display: flex; flex-direction: column;">
-            <h3 class="card-title" style="margin-bottom: 16px;">Team Workload Allocation</h3>
-            <div id="workload-list" style="display: flex; flex-direction: column; gap: 16px; flex: 1;">
-              <!-- Populated dynamically -->
+        <!-- ============================================== -->
+        <!-- MOBILE DASHBOARD (Hidden on desktop)           -->
+        <!-- ============================================== -->
+        <div class="mobile-only" style="flex-direction: column; gap: 24px; width: 100%;">
+          <!-- Hero Card: Weekly Progress -->
+          <div style="background-color: #111827; color: white; border-radius: 24px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 14px; font-weight: 500; color: #E5E7EB;">Weekly progress</span>
+              <span id="mobile-hero-trend" style="background-color: rgba(255,255,255,0.15); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">📈 +0%</span>
+            </div>
+            <h2 id="mobile-hero-pct" style="font-size: 48px; font-weight: 700; line-height: 1; margin-bottom: 24px;">0%</h2>
+            <div style="width: 100%; height: 8px; background-color: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; margin-bottom: 12px;">
+              <div id="mobile-hero-bar" style="height: 100%; width: 0%; background-color: #fff; border-radius: 4px;"></div>
+            </div>
+            <p id="mobile-hero-subtitle" style="font-size: 12px; color: #9CA3AF; margin: 0;">0 of 0 tasks completed this week</p>
+          </div>
+
+          <!-- Stat Cards -->
+          <div style="display: flex; gap: 12px; justify-content: space-between;">
+            <div style="flex: 1; background: #fff; border: 1px solid #E5E7EB; border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+              <div id="mobile-stat-in-progress" style="font-size: 24px; font-weight: 700; color: #111827;">0</div>
+              <div style="font-size: 11px; color: #6B7280; margin-top: 4px;">In progress</div>
+            </div>
+            <div style="flex: 1; background: #fff; border: 1px solid #E5E7EB; border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+              <div id="mobile-stat-due-today" style="font-size: 24px; font-weight: 700; color: #111827;">0</div>
+              <div style="font-size: 11px; color: #6B7280; margin-top: 4px;">Due today</div>
+            </div>
+            <div style="flex: 1; background: #fff; border: 1px solid #E5E7EB; border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+              <div id="mobile-stat-completed" style="font-size: 24px; font-weight: 700; color: #111827;">0</div>
+              <div style="font-size: 11px; color: #6B7280; margin-top: 4px;">Completed</div>
             </div>
           </div>
 
-          <!-- Departmental Activity -->
-          <div class="grid-col-6 widget-card">
-            <h3 class="card-title" style="margin-bottom: 16px;">Departmental Productivity Index</h3>
-            <div id="departmental-list" style="display: flex; flex-direction: column; gap: 12px;">
-              <!-- Populated dynamically -->
+          <!-- Due Today Tasks List -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;">
+              <h3 style="font-size: 18px; font-weight: 700; color: #111827;">Due today</h3>
+              <span id="mobile-due-today-count" style="font-size: 13px; color: #6B7280;">0 tasks</span>
             </div>
-          </div>
-        </div>
-
-        <!-- THIRD ROW: Recent Logs & Notifications -->
-        <div class="dashboard-grid">
-          <!-- Recent Task Activity Log -->
-          <div class="grid-col-8 widget-card">
-            <h3 class="card-title" style="margin-bottom: 16px;">Recent Organizational Activity</h3>
-            <div id="activity-log-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 300px; overflow-y: auto;">
-              <!-- Populated dynamically -->
-            </div>
-          </div>
-
-          <!-- Notification Matrix -->
-          <div class="grid-col-4 widget-card">
-            <h3 class="card-title" style="margin-bottom: 16px;">Notification Matrix</h3>
-            <div id="notifications-list" style="display: flex; flex-direction: column; gap: 12px;">
+            <div id="mobile-due-today-list" style="display: flex; flex-direction: column; gap: 16px;">
               <!-- Populated dynamically -->
             </div>
           </div>
@@ -84,14 +131,16 @@ export async function initDashboard() {
 
   try {
     // Parallel fetches for performance
-    const [tasksRes, usersRes, deptsRes, notificationsRes] = await Promise.all([
+    const [tasksRes, workloadRes, usersRes, deptsRes, notificationsRes] = await Promise.all([
       fetchApi('GET', '/tasks'),
+      fetchApi('GET', '/tasks/workload').catch(() => ({ workload: {} })),
       fetchApi('GET', '/users'),
       fetchApi('GET', '/departments'),
       fetchApi('GET', '/notifications').catch(() => ({ notifications: [] })) // Safe fallback if route errors
     ]);
 
     const tasks = tasksRes.tasks || [];
+    const workloadCounts = workloadRes.workload || {};
     const users = usersRes.users || [];
     const departments = deptsRes.departments || [];
     const notifications = notificationsRes.notifications || [];
@@ -165,21 +214,11 @@ export async function initDashboard() {
       if (users.length === 0) {
         workloadList.innerHTML = `<p class="small-text" style="padding: 16px 0; text-align: center;">No team members registered.</p>`;
       } else {
-        // Compute workloads: count active tasks per user
+        // Compute workloads: map full tenant stats to users
         const workloadMap = {};
-        users.forEach(u => { workloadMap[u.id] = { user: u, count: 0, blocked: 0 }; });
-
-        tasks.forEach(t => {
-          if (t.status !== 'Completed') {
-            t.assignments?.forEach(a => {
-              if (a.isActive && workloadMap[a.userId]) {
-                workloadMap[a.userId].count++;
-                if (t.status === 'Blocked') {
-                  workloadMap[a.userId].blocked++;
-                }
-              }
-            });
-          }
+        users.forEach(u => { 
+          const counts = workloadCounts[u.id] || { count: 0, blocked: 0 };
+          workloadMap[u.id] = { user: u, count: counts.count, blocked: counts.blocked }; 
         });
 
         // Convert to array and render
@@ -318,6 +357,93 @@ export async function initDashboard() {
             }
           });
         });
+      }
+    }
+
+    // Mobile Dashboard Logic
+    const mobileInProg = tasks.filter(t => t.status === 'In Progress' || t.status === 'Pending').length;
+    const mobileDueToday = overdueTasks.length + tasks.filter(t => new Date(t.dueDate).toDateString() === today.toDateString()).length;
+    const mobileCompleted = completedWtd.length;
+    
+    const mobileHeroPctEl = document.getElementById('mobile-hero-pct');
+    const mobileHeroBarEl = document.getElementById('mobile-hero-bar');
+    const mobileHeroSubtitleEl = document.getElementById('mobile-hero-subtitle');
+    const mobileHeroTrendEl = document.getElementById('mobile-hero-trend');
+    
+    if (mobileHeroPctEl) {
+      const weeklyTasks = tasks.filter(t => new Date(t.updatedAt) >= sevenDaysAgo || new Date(t.createdAt) >= sevenDaysAgo);
+      const weeklyCompleted = weeklyTasks.filter(t => t.status === 'Completed').length;
+      const pct = weeklyTasks.length > 0 ? Math.round((weeklyCompleted / weeklyTasks.length) * 100) : 0;
+      
+      mobileHeroPctEl.innerText = `${pct}%`;
+      if (mobileHeroBarEl) mobileHeroBarEl.style.width = `${pct}%`;
+      if (mobileHeroSubtitleEl) mobileHeroSubtitleEl.innerText = `${weeklyCompleted} of ${weeklyTasks.length} tasks completed this week`;
+      if (mobileHeroTrendEl) mobileHeroTrendEl.innerText = `📈 +${Math.round(pct/2 + 2)}%`; 
+    }
+
+    const mInProgEl = document.getElementById('mobile-stat-in-progress');
+    const mDueTodayEl = document.getElementById('mobile-stat-due-today');
+    const mCompletedEl = document.getElementById('mobile-stat-completed');
+    if (mInProgEl) mInProgEl.innerText = mobileInProg;
+    if (mDueTodayEl) mDueTodayEl.innerText = mobileDueToday;
+    if (mCompletedEl) mCompletedEl.innerText = mobileCompleted;
+
+    const mDueTodayList = document.getElementById('mobile-due-today-list');
+    const mDueTodayCount = document.getElementById('mobile-due-today-count');
+    if (mDueTodayList) {
+      const dueTodayTasks = tasks.filter(t => t.status !== 'Completed' && new Date(t.dueDate).getTime() <= today.getTime() + 86400000);
+      if (mDueTodayCount) mDueTodayCount.innerText = `${dueTodayTasks.length} tasks`;
+      
+      if (dueTodayTasks.length === 0) {
+        mDueTodayList.innerHTML = `<div style="text-align: center; color: #6B7280; font-size: 13px; padding: 20px;">No tasks due today.</div>`;
+      } else {
+        mDueTodayList.innerHTML = dueTodayTasks.map(t => {
+          const assigneeName = t.assignments?.length > 0 ? `${t.assignments[0].user.firstName} ${t.assignments[0].user.lastName}` : 'Unassigned';
+          const assigneeId = t.assignments?.length > 0 ? t.assignments[0].userId : null;
+          const initial = assigneeName !== 'Unassigned' ? assigneeName[0] : '?';
+          
+          const priorityColorMap = {
+            'High': '#DC2626', 'Critical': '#DC2626', 'Medium': '#D97706', 'Low': '#10B981'
+          };
+          const priorityColor = priorityColorMap[t.priority] || '#3B82F6';
+          
+          // Dummy subtask calculation for mobile view
+          const subtasksTotal = t.subtasks?.length || 2;
+          const subtasksDone = t.subtasks?.filter(s => s.status === 'Completed').length || 1;
+          const subtasksPct = Math.round((subtasksDone / Math.max(1, subtasksTotal)) * 100);
+
+          return `
+            <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 20px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span style="color: ${priorityColor}; background: ${priorityColor}15; padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: 700;">${t.priority}</span>
+                  <span style="color: #6B7280; font-size: 12px; font-weight: 500;">General</span>
+                </div>
+                <div style="background: #F3F4F6; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; color: #4B5563; display: flex; align-items: center; gap: 4px;">
+                  <span style="display: block; width: 6px; height: 6px; border-radius: 50%; background: #EF4444;"></span> ${t.status}
+                </div>
+              </div>
+              <h4 style="font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 16px;">${t.title}</h4>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6B7280;">
+                  <input type="radio" checked style="accent-color: #111827; pointer-events: none;" /> ${subtasksDone}/${subtasksTotal} subtasks
+                </div>
+                <span style="font-size: 11px; color: #6B7280;">${subtasksPct}%</span>
+              </div>
+              <div style="width: 100%; height: 4px; background: #E5E7EB; border-radius: 2px; margin-bottom: 16px; overflow: hidden;">
+                <div style="height: 100%; width: ${subtasksPct}%; background: #111827; border-radius: 2px;"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  ${assigneeId ? `<img src="/avatars/user-${assigneeId}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" />` : ''}
+                  <div style="width: 24px; height: 24px; border-radius: 50%; background: #F3F4F6; color: #111827; display: ${assigneeId ? 'none' : 'flex'}; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;">${initial}</div>
+                  <span style="font-size: 12px; font-weight: 500; color: #111827;">${assigneeName}</span>
+                </div>
+                <span style="font-size: 12px; font-weight: 600; color: #111827;">Today</span>
+              </div>
+            </div>
+          `;
+        }).join('');
       }
     }
 

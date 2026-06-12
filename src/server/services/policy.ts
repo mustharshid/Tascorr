@@ -64,8 +64,8 @@ export class PolicyService {
     user: IAuthSession,
     assigneeId: number
   ): Promise<boolean> {
-    // Admin bypass within tenant
-    if (user.rankLevel === 0) return true;
+    // Rule: The logged-in user cannot assign tasks to themselves
+    if (user.userId === assigneeId) return false;
 
     const assignee = await prisma.user.findUnique({
       where: { id: assigneeId },
@@ -75,24 +75,33 @@ export class PolicyService {
     if (!assignee) return false;
     if (assignee.tenantId !== user.tenantId) return false;
 
-    // Rule 1: Assignee is user's direct report
-    if (assignee.managerId === user.userId) return true;
+    // Rule: Do not allow a lower level user to assign task to a higher level user (lower rank level number = higher authority)
+    if (user.rankLevel > assignee.rank.level) return false;
 
-    // Rule 2: Department Head can assign to anyone in their department of lower rank
-    if (assignee.departmentId === user.departmentId && user.departmentId !== null) {
-      const dept = await prisma.department.findUnique({
-        where: { id: user.departmentId },
-      });
-      if (dept && dept.headUserId === user.userId) {
-        // Must check numerical rank level authority (NNR-5)
-        const userRank = await prisma.rank.findFirst({
-          where: { tenantId: user.tenantId, level: user.rankLevel },
-        });
-        if (userRank && userRank.level < assignee.rank.level) {
+    // Admin bypass within tenant (after checking self-assignment and hierarchy bounds)
+    if (user.rankLevel === 0) return true;
+
+    // Fetch tenant settings to check peer/lower assignment rules
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: user.tenantId },
+      select: { allowCrossDeptPeerAssignment: true }
+    });
+
+    // Rule: Same Rank or Lower Rank
+    if (user.rankLevel <= assignee.rank.level) {
+      if (tenant?.allowCrossDeptPeerAssignment) {
+        // If cross-dept assignment is allowed, any peer or subordinate rank in any department is assignable
+        return true;
+      } else {
+        // If disabled, only allow peer/subordinate assignment if they are in the same department
+        if (user.departmentId !== null && user.departmentId === assignee.departmentId) {
           return true;
         }
       }
     }
+
+    // Rule 1: Assignee is user's direct report (always allowed regardless of department)
+    if (assignee.managerId === user.userId) return true;
 
     // Rule 3: Valid cross-department authorization request exists and is active (approved, not expired)
     const activeCrossAuth = await prisma.crossDeptAuthorization.findFirst({

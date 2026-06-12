@@ -127,7 +127,6 @@ router.post('/tenants', authenticateSession, requireSuperadmin, async (req: Requ
 router.get('/audit-logs', authenticateSession, requireSuperadmin, async (req: Request, res: Response) => {
   try {
     const logs = await prisma.auditLog.findMany({
-      where: { tenantId: 0 }, // Platform Scope logs
       include: {
         actor: { select: { email: true } },
       },

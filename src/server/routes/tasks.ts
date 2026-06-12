@@ -14,7 +14,7 @@ const router = Router();
  * Create task (Manager or above within assignee scoping rules)
  */
 router.post('/', authenticateSession, async (req: Request, res: Response) => {
-  const { title, description, dueDate, priority, departmentId, assigneeIds } = req.body;
+  const { title, description, dueDate, priority, departmentId, assigneeIds, isRecurring, recurrenceInterval } = req.body;
   const tenantId = req.user!.tenantId;
 
   // 1. Validate mandatory fields
@@ -59,6 +59,8 @@ router.post('/', authenticateSession, async (req: Request, res: Response) => {
           departmentId: departmentId || null,
           createdById: req.user!.userId,
           status: 'Pending',
+          isRecurring: !!isRecurring,
+          recurrenceInterval: recurrenceInterval || null,
         },
       });
 
@@ -128,6 +130,9 @@ router.get('/', authenticateSession, async (req: Request, res: Response) => {
             },
           },
         },
+        creator: {
+          select: { id: true, firstName: true, lastName: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -144,6 +149,45 @@ router.get('/', authenticateSession, async (req: Request, res: Response) => {
     return res.status(200).json({ tasks: visibleTasks });
   } catch (error: any) {
     return res.status(500).json({ error: `Retrieval error: ${error.message}` });
+  }
+});
+
+/**
+ * GET /api/tasks/workload
+ * Retrieve aggregated workload counts for the entire tenant, allowing all team members to see full workload allocation.
+ */
+router.get('/workload', authenticateSession, async (req: Request, res: Response) => {
+  const tenantId = req.user!.tenantId;
+  try {
+    const assignments = await prisma.taskAssignment.findMany({
+      where: {
+        isActive: true,
+        task: {
+          tenantId: tenantId,
+          status: { not: 'Completed' }
+        }
+      },
+      include: {
+        task: {
+          select: { status: true }
+        }
+      }
+    });
+
+    const workloadMap: Record<number, { count: number; blocked: number }> = {};
+    for (const a of assignments) {
+      if (!workloadMap[a.userId]) {
+        workloadMap[a.userId] = { count: 0, blocked: 0 };
+      }
+      workloadMap[a.userId].count++;
+      if (a.task.status === 'Blocked') {
+        workloadMap[a.userId].blocked++;
+      }
+    }
+
+    return res.status(200).json({ workload: workloadMap });
+  } catch (error: any) {
+    return res.status(500).json({ error: `Workload retrieval error: ${error.message}` });
   }
 });
 
@@ -171,11 +215,20 @@ router.get('/:id', authenticateSession, async (req: Request, res: Response) => {
             user: { select: { id: true, email: true, firstName: true, lastName: true } },
           },
         },
+        creator: {
+          select: { id: true, firstName: true, lastName: true }
+        },
         comments: {
           orderBy: { createdAt: 'asc' },
+          include: {
+            author: { select: { id: true, firstName: true, lastName: true } }
+          }
         },
         blockers: {
           orderBy: { createdAt: 'desc' },
+          include: {
+            reporter: { select: { id: true, firstName: true, lastName: true } }
+          }
         },
         subtasks: true,
       },
@@ -223,6 +276,25 @@ router.patch('/:id/status', authenticateSession, async (req: Request, res: Respo
       return res.status(400).json({ error: 'Completed is a terminal state and cannot be reversed.' });
     }
 
+    // Role restriction for completing tasks
+    if (status === 'Completed') {
+      const isCreator = task.createdById === req.user!.userId;
+      const isAdmin = req.user!.rankLevel === 0;
+      const isDeptHead = task.departmentId === req.user!.departmentId && req.user!.rankLevel <= 4 && req.user!.rankLevel > 0; // rough check, but better to check exact dept head
+      // Let's query dept head directly:
+      let isActualDeptHead = false;
+      if (task.departmentId) {
+        const dept = await prisma.department.findUnique({ where: { id: task.departmentId } });
+        if (dept && dept.headUserId === req.user!.userId) {
+          isActualDeptHead = true;
+        }
+      }
+
+      if (!isCreator && !isAdmin && !isActualDeptHead) {
+        return res.status(403).json({ error: 'Access denied. Only the task assigner, department head, or administrator can mark a task as Completed.' });
+      }
+    }
+
     // Transition status and audit in transaction
     const updatedTask = await prisma.$transaction(async (tx) => {
       const t = await tx.task.update({
@@ -240,10 +312,139 @@ router.patch('/:id/status', authenticateSession, async (req: Request, res: Respo
         tx
       );
 
+      // Handle recurring task auto-generation if status transitioned to Completed
+      if (status === 'Completed' && task.status !== 'Completed' && task.isRecurring) {
+        // Calculate next due date
+        const nextDueDate = new Date(task.dueDate);
+        if (task.recurrenceInterval === 'Daily') {
+          nextDueDate.setDate(nextDueDate.getDate() + 1);
+        } else if (task.recurrenceInterval === 'Weekly') {
+          nextDueDate.setDate(nextDueDate.getDate() + 7);
+        } else if (task.recurrenceInterval === 'Monthly') {
+          nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+        }
+
+        // Create the next occurrence
+        const nextTask = await tx.task.create({
+          data: {
+            tenantId: task.tenantId,
+            title: task.title,
+            description: task.description,
+            dueDate: nextDueDate,
+            priority: task.priority,
+            departmentId: task.departmentId,
+            createdById: task.createdById,
+            status: 'Pending',
+            isRecurring: true,
+            recurrenceInterval: task.recurrenceInterval,
+          },
+        });
+
+        // Find current active assignments of the task
+        const activeAssignments = await tx.taskAssignment.findMany({
+          where: { taskId: task.id, isActive: true },
+        });
+
+        // Duplicate active assignments to the next task occurrence
+        for (const assignment of activeAssignments) {
+          await tx.taskAssignment.create({
+            data: {
+              tenantId: task.tenantId,
+              taskId: nextTask.id,
+              userId: assignment.userId,
+              isActive: true,
+            },
+          });
+        }
+
+        // Log audit action for the auto-created task
+        await AuditService.logAction(
+          task.tenantId,
+          task.createdById,
+          'TASK_CREATE_RECURRING',
+          'Task',
+          nextTask.id,
+          { title: nextTask.title, parentTaskId: task.id },
+          tx
+        );
+      }
+
       return t;
     });
 
     return res.status(200).json({ message: 'Task status updated.', task: updatedTask });
+  } catch (error: any) {
+    return res.status(500).json({ error: `Update error: ${error.message}` });
+  }
+});
+
+/**
+ * PATCH /api/tasks/:id
+ * Edit task elements (Title, Description, DueDate, Priority). Restricted to Creator.
+ */
+router.patch('/:id', authenticateSession, async (req: Request, res: Response) => {
+  const taskId = Number(req.params.id);
+  const { title, description, dueDate, priority } = req.body;
+
+  if (isNaN(taskId)) {
+    return res.status(400).json({ error: 'Invalid task ID.' });
+  }
+
+  try {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId }
+    });
+
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found.' });
+    }
+
+    if (task.tenantId !== req.user!.tenantId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
+    // Only creator can edit
+    if (task.createdById !== req.user!.userId) {
+      return res.status(403).json({ error: 'Access denied. Only the task creator can edit task details.' });
+    }
+
+    // Validation
+    const updates: any = {};
+    if (title !== undefined) updates.title = title.trim();
+    if (description !== undefined) updates.description = description.trim();
+    if (dueDate !== undefined) updates.dueDate = new Date(dueDate);
+    if (priority !== undefined) {
+      const validPriorities = ['Low', 'Medium', 'High', 'Critical'];
+      if (!validPriorities.includes(priority)) {
+        return res.status(400).json({ error: 'Invalid priority.' });
+      }
+      updates.priority = priority;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No fields provided for update.' });
+    }
+
+    const updatedTask = await prisma.$transaction(async (tx) => {
+      const t = await tx.task.update({
+        where: { id: taskId },
+        data: updates
+      });
+
+      await AuditService.logAction(
+        req.user!.tenantId,
+        req.user!.userId,
+        'TASK_EDIT',
+        'Task',
+        taskId,
+        { updates },
+        tx
+      );
+      
+      return t;
+    });
+
+    return res.status(200).json({ message: 'Task updated successfully.', task: updatedTask });
   } catch (error: any) {
     return res.status(500).json({ error: `Update error: ${error.message}` });
   }

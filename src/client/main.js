@@ -80,9 +80,9 @@ function initNavigation() {
       // Non-superadmin cannot see superadmin console
       if (key === 'superadmin') return;
 
-      // Employee hides employees registry, departments visualizer, and SLA reports
+      // Employee hides employees registry and SLA reports
       if (rank > 2) {
-        if (key === 'employees' || key === 'departments' || key === 'reports') return;
+        if (key === 'employees' || key === 'reports') return;
       }
     }
 
@@ -119,7 +119,7 @@ function initNavigation() {
 
   // Build Mobile Bottom Navigation (four priority items + center quick action)
   if (!isSuper) {
-    const mobileKeys = ['dashboard', 'tasks', 'quickAction', 'departments', 'profile'];
+    const mobileKeys = ['dashboard', 'tasks', 'quickAction', 'settings', 'logout'];
     let mobileHtml = '';
 
     mobileKeys.forEach(key => {
@@ -134,12 +134,19 @@ function initNavigation() {
               </svg>
             </div>
           `;
+        } else {
+          // Placeholder to maintain spacing if user cannot create tasks
+          mobileHtml += `<div style="width: 56px; height: 56px;"></div>`;
         }
+      } else if (key === 'logout') {
+        mobileHtml += `
+          <a href="#" class="mobile-nav-item" id="mobile-nav-logout" style="color: var(--status-danger);">
+            ${ICONS['logout']}
+            <span>Sign Out</span>
+          </a>
+        `;
       } else {
         const route = ROUTES[key];
-        // Hide if not authorized
-        if (key === 'departments' && rank > 2) return;
-        
         const iconSvg = ICONS[route.icon] || '';
         mobileHtml += `
           <a href="#${key}" class="mobile-nav-item" id="mobile-nav-${key}">
@@ -162,6 +169,12 @@ function initNavigation() {
         }
       });
       drawer.open();
+    });
+
+    // Mobile logout trigger
+    document.getElementById('mobile-nav-logout')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      AuthState.logout();
     });
   }
 }
@@ -235,10 +248,12 @@ function router() {
   const layout = document.getElementById('app-layout');
 
   if (route.isPublic) {
+    document.body.classList.add('public-route');
     if (sidebar) sidebar.style.display = 'none';
     if (header) header.style.display = 'none';
     if (layout) layout.style.backgroundColor = 'var(--bg-primary)';
   } else {
+    document.body.classList.remove('public-route');
     if (sidebar) {
       sidebar.style.display = window.innerWidth > 768 ? 'flex' : 'none';
     }
@@ -273,21 +288,54 @@ function initLayout() {
     });
   }
 
-  if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      const targetTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', targetTheme);
+  // ── Theme persistence ──────────────────────────────────────────────────
+  // Restore saved theme on load (default: light)
+  const savedTheme = localStorage.getItem('tascorr_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
 
-      const icon = document.getElementById('theme-icon');
-      if (icon) {
-        if (targetTheme === 'dark') {
-          icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />`;
-        } else {
-          icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />`;
-        }
+  function syncThemeIcon(theme) {
+    const iconDesktop = document.getElementById('theme-icon');
+    const iconMobile = document.getElementById('mobile-theme-icon');
+    
+    const updateIcon = (iconEl) => {
+      if (!iconEl) return;
+      const isDarkMode = ['dark', 'midnight'].includes(theme);
+      if (isDarkMode) {
+        // Show sun icon
+        iconEl.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />`;
+      } else {
+        // Show moon icon
+        iconEl.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />`;
       }
-    });
+    };
+
+    updateIcon(iconDesktop);
+    updateIcon(iconMobile);
+  }
+
+  // Apply correct icon for restored theme
+  syncThemeIcon(savedTheme);
+
+  const handleThemeToggle = () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const isDarkMode = ['dark', 'midnight'].includes(currentTheme);
+    const targetTheme = isDarkMode ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', targetTheme);
+    localStorage.setItem('tascorr_theme', targetTheme);
+    syncThemeIcon(targetTheme);
+    
+    // Dispatch a custom event so settings view can update if open
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: targetTheme }));
+  };
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', handleThemeToggle);
+  }
+  
+  const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
+  if (mobileThemeToggle) {
+    mobileThemeToggle.addEventListener('click', handleThemeToggle);
   }
 
   window.addEventListener('resize', () => {
@@ -311,6 +359,76 @@ function updateUserHeaderBadge() {
       badge.innerText = `${companyLabel} (${user.rankTitle})`;
     } else {
       badge.innerText = 'Guest';
+    }
+  }
+
+  // Populate mobile header
+  const mobileName = document.getElementById('mobile-user-name');
+  const mobileGreeting = document.getElementById('mobile-greeting');
+  const mobileAvatar = document.getElementById('mobile-header-avatar');
+  
+  if (mobileName && AuthState.isAuthenticated && AuthState.currentUser) {
+    const user = AuthState.currentUser;
+    mobileName.innerText = user.firstName;
+    
+    // Fun multi-language greeting
+    const greetings = [
+      { text: "Good morning,", hint: "en" },
+      { text: "Buenos días,", hint: "es" },
+      { text: "Bonjour,", hint: "fr" },
+      { text: "Guten Morgen,", hint: "de" },
+      { text: "Buongiorno,", hint: "it" },
+      { text: "Ohayō,", hint: "jp" },
+      { text: "Anyoung,", hint: "kr" },
+      { text: "Zǎo ān,", hint: "cn" },
+      { text: "Namaste,", hint: "in" },
+      { text: "Bom dia,", hint: "pt" }
+    ];
+    const rand = greetings[Math.floor(Math.random() * greetings.length)];
+    if (mobileGreeting) {
+      mobileGreeting.innerHTML = `${rand.text} <span style="font-size:10px; opacity:0.6; text-transform:uppercase; margin-left:4px;" title="Language: ${rand.hint}">${rand.hint}</span>`;
+    }
+    
+    if (mobileAvatar) {
+      const initials = `${user.firstName ? user.firstName.charAt(0) : ''}${user.lastName ? user.lastName.charAt(0) : ''}`;
+      mobileAvatar.innerHTML = `
+        <img src="/avatars/user-${user.id}.jpg?t=${Date.now()}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" />
+        <div style="width:40px;height:40px;border-radius:50%;background:#F3F4F6;color:#111827;display:none;align-items:center;justify-content:center;font-weight:700;font-size:14px;border:1px solid #E5E7EB;">${initials || '?'}</div>
+      `;
+    }
+  }
+
+  // Populate sidebar user card
+  const userCard = document.getElementById('sidebar-user-card');
+  const avatar = document.getElementById('sidebar-user-avatar');
+  const avatarImg = document.getElementById('sidebar-user-avatar-img');
+  const nameLabel = document.getElementById('sidebar-user-name');
+  const roleLabel = document.getElementById('sidebar-user-role');
+
+  if (userCard && avatar && nameLabel && roleLabel) {
+    if (AuthState.isAuthenticated && AuthState.currentUser) {
+      const user = AuthState.currentUser;
+      const initials = `${user.firstName ? user.firstName.charAt(0) : ''}${user.lastName ? user.lastName.charAt(0) : ''}`;
+      
+      avatar.innerText = initials || '??';
+      
+      if (avatarImg) {
+        avatarImg.src = `/avatars/user-${user.id}.jpg?t=${Date.now()}`;
+        avatarImg.onload = () => {
+          avatarImg.style.display = 'block';
+          avatar.style.display = 'none';
+        };
+        avatarImg.onerror = () => {
+          avatarImg.style.display = 'none';
+          avatar.style.display = 'flex';
+        };
+      }
+      
+      nameLabel.innerText = `${user.firstName} ${user.lastName}`;
+      roleLabel.innerText = user.rankTitle || 'Employee';
+      userCard.style.display = 'flex';
+    } else {
+      userCard.style.display = 'none';
     }
   }
 }

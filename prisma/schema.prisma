@@ -7,7 +7,8 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 // 1. Tenants (Organization workspaces)
@@ -16,6 +17,7 @@ model Tenant {
   name                    String
   subscriptionTier        Int                       @default(1) // Tier 1, 2, 3
   status                  String                    @default("active") // active, suspended
+  allowCrossDeptPeerAssignment Boolean              @default(true) // If true, same rank can assign across depts. If false, only same rank within same dept.
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
   
@@ -139,6 +141,9 @@ model Task {
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
   // Soft-deletes are PROHIBITED for tasks (NNR-6)
 
+  isRecurring             Boolean                   @default(false) @map("is_recurring")
+  recurrenceInterval      String?                   @map("recurrence_interval") // daily, weekly, monthly
+  
   // Relations
   tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   creator                 User                      @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: Restrict)

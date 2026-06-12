@@ -13,9 +13,18 @@ export function renderProfileView() {
     <div style="display: flex; flex-direction: column; gap: 32px; max-width: 1200px; margin: 0 auto;">
       <!-- Profile Header widget -->
       <div class="widget-card" style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
-        <!-- Avatar Initial Badge -->
-        <div id="profile-avatar" style="width: 80px; height: 80px; border-radius: 50%; background-color: var(--accent-navy-light); color: var(--accent-navy-primary); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; font-family: var(--font-display);">
-          T
+        <!-- Avatar Upload / Display -->
+        <div style="position: relative; width: 80px; height: 80px; flex-shrink: 0;">
+          <img id="profile-avatar-img" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;" />
+          <div id="profile-avatar" style="width: 100%; height: 100%; border-radius: 50%; background-color: var(--accent-navy-light); color: var(--accent-navy-primary); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; font-family: var(--font-display);">
+            T
+          </div>
+          <label id="upload-avatar-btn" style="display: none; position: absolute; bottom: 0; right: 0; background: var(--bg-primary); border: 1px solid var(--border-neutral); border-radius: 50%; width: 24px; height: 24px; cursor: pointer; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" title="Upload Avatar">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 14px; height: 14px; color: var(--text-secondary);">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <input type="file" id="avatar-upload-input" accept="image/*" style="display: none;" />
+          </label>
         </div>
 
         <div style="flex: 1; min-width: 200px;">
@@ -94,12 +103,61 @@ export async function initProfileListeners() {
 
     // Populate header
     nameEl.innerText = `${profileUser.firstName} ${profileUser.lastName}`;
-    document.getElementById('profile-avatar').innerText = profileUser.firstName[0];
+    
+    const avatarImg = document.getElementById('profile-avatar-img');
+    const avatarFallback = document.getElementById('profile-avatar');
+    
+    avatarImg.src = `/avatars/user-${profileUser.id}.jpg?t=${Date.now()}`;
+    avatarImg.onload = () => {
+      avatarImg.style.display = 'block';
+      avatarFallback.style.display = 'none';
+    };
+    avatarImg.onerror = () => {
+      avatarImg.style.display = 'none';
+      avatarFallback.style.display = 'flex';
+      avatarFallback.innerText = profileUser.firstName[0];
+    };
+
     document.getElementById('profile-rank').innerText = `${profileUser.rank} (Hierarchy level ${profileUser.rankLevel})`;
     document.getElementById('profile-dept-badge').innerText = profileUser.department || 'General / Corporate';
     document.getElementById('profile-status-badge').innerText = profileUser.status;
     document.getElementById('profile-email-label').innerText = profileUser.email;
     document.getElementById('profile-joined-label').innerText = new Date(profileUser.createdAt).toLocaleDateString();
+
+    // Show upload button only if it's the current user or admin
+    if (userId === AuthState.currentUser?.id || AuthState.isAdmin()) {
+      const uploadBtn = document.getElementById('upload-avatar-btn');
+      const uploadInput = document.getElementById('avatar-upload-input');
+      
+      if (uploadBtn) uploadBtn.style.display = 'flex';
+      
+      uploadInput?.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64String = reader.result;
+          try {
+            uploadBtn.style.opacity = '0.5';
+            const res = await fetchApi('POST', '/upload/avatar', {
+              imageBase64: base64String,
+              targetUserId: userId
+            });
+            Notifications.success('Avatar Updated', 'Profile picture updated successfully.');
+            avatarImg.src = res.avatarUrl;
+            avatarImg.style.display = 'block';
+            avatarFallback.style.display = 'none';
+          } catch (err) {
+            console.error(err);
+            Notifications.error('Upload Failed', err.message);
+          } finally {
+            uploadBtn.style.opacity = '1';
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
 
     renderTasksTable('week');
 

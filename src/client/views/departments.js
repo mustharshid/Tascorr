@@ -325,63 +325,65 @@ function renderTree() {
 
   const isAdmin = AuthState.isAdmin();
 
-  // Find corporate CEO or topmost administrators
-  // top level is lowest rank level (usually level 0)
-  const rootUsers = employees.filter(e => e.rank?.level === 0 && e.status === 'active');
+  let treeHtml = '';
+
+  // Find corporate CEO or topmost administrators (level 1)
+  const rootUsers = employees.filter(e => e.rank?.level === 1 && e.status === 'active');
   const rootNode = rootUsers.length > 0 ? rootUsers[0] : null;
 
-  if (!rootNode) {
-    rootEl.innerHTML = `
-      <div style="text-align: center; padding: 24px;">
-        <p class="body-text">No corporate root nodes (level 0 administrator) found.</p>
-        <p class="small-text">Add administrator level user accounts to visualize hierarchy.</p>
+  if (rootNode) {
+    const avatarUrl = `/avatars/user-${rootNode.id}.jpg?t=${Date.now()}`;
+    const initial = `${rootNode.firstName[0]}${rootNode.lastName[0]}`;
+    
+    treeHtml += `
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 32px;">
+        <!-- Root Card -->
+        <div class="org-node" style="position: relative; z-index: 2;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; overflow: hidden; margin: 0 auto 12px auto; background-color: var(--accent-navy-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; border: 2px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <img src="${avatarUrl}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+            <div style="display: flex;">${escapeHTML(initial)}</div>
+          </div>
+          <div style="font-weight: 600; font-size: 14px; text-align: center; color: var(--text-primary); margin-bottom: 4px;">
+            ${escapeHTML(rootNode.firstName)} ${escapeHTML(rootNode.lastName)}
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary); text-align: center;">
+            ${escapeHTML(rootNode.rank?.title || 'Top Executive')}
+          </div>
+        </div>
+        
+        <!-- Stem down from Root -->
+        ${departments.length > 0 ? `<div style="width: 2px; height: 32px; background-color: var(--tree-line-color);"></div>` : ''}
       </div>
     `;
-    return;
   }
-
-  // CEO / Administrator Card
-  let treeHtml = `
-    <!-- Root CEO Node -->
-    <div style="display: flex; flex-direction: column; align-items: center;">
-      <div class="widget-card" style="padding: 16px 24px; text-align: center; border: 2px solid var(--accent-navy-primary); max-width: 260px; min-width: 180px; box-shadow: 0 4px 12px rgba(30, 58, 95, 0.1);">
-        <span class="pill-badge status-info" style="font-size: 10px; margin-bottom: 6px; text-transform: uppercase;">Company Admin</span>
-        <h4 class="card-title" style="font-size: 14px; font-weight: 700; margin-bottom: 2px;">${escapeHTML(rootNode.firstName)} ${escapeHTML(rootNode.lastName)}</h4>
-        <p class="small-text" style="color: var(--text-secondary); margin: 0;">${escapeHTML(rootNode.email)}</p>
-      </div>
-      
-      <!-- Connector Line to Departments -->
-      ${departments.length > 0 ? `
-        <div style="width: 2px; height: 32px; background-color: var(--border-neutral);"></div>
-      ` : ''}
-    </div>
-  `;
 
   // Render Departments row
   if (departments.length > 0) {
     // Horizontal row of departments
     treeHtml += `
       <div style="display: flex; gap: 32px; justify-content: center; align-items: flex-start; position: relative;">
-        
-        <!-- Horizontal connector bar -->
-        ${departments.length > 1 ? `
-          <div style="position: absolute; top: 0; left: 12%; right: 12%; height: 2px; background-color: var(--border-neutral);"></div>
-        ` : ''}
 
-        ${departments.map(d => {
+        ${departments.map((d, index) => {
           const headUser = d.headUser;
           const headName = headUser ? `${headUser.firstName} ${headUser.lastName}` : 'Vacant';
           const headTitle = headUser ? (headUser.rank?.title || 'VP / Department Head') : 'No Head Assigned';
           const members = employees.filter(e => e.departmentId === d.id && e.id !== headUser?.id);
 
           return `
-            <div style="display: flex; flex-direction: column; align-items: center; position: relative;">
+            <div style="display: flex; flex-direction: column; align-items: center; position: relative; min-width: 200px;">
               
+              <!-- Horizontal connector line segments bridging the gap -->
+              ${departments.length > 1 ? `
+                <div style="position: absolute; top: 0; height: 2px; background-color: var(--tree-line-color);
+                  left: ${index === 0 ? '50%' : '-16px'};
+                  right: ${index === departments.length - 1 ? '50%' : '-16px'};"></div>
+              ` : ''}
+
               <!-- Vertical drop line from horizontal connector -->
-              <div style="width: 2px; height: 16px; background-color: var(--border-neutral);"></div>
+              <div style="width: 2px; height: 16px; background-color: var(--tree-line-color); z-index: 2;"></div>
               
               <!-- Department Head Card -->
-              <div class="widget-card" style="padding: 16px 20px; text-align: center; border: 1px solid var(--border-neutral); max-width: 240px; min-width: 180px; background-color: var(--bg-secondary); margin-top: -2px; position: relative;">
+              <div class="widget-card" style="padding: 16px 20px; text-align: center; border: 1px solid var(--border-neutral); max-width: 240px; min-width: 180px; background-color: var(--bg-secondary); margin-top: -2px; position: relative; z-index: 3;">
                 ${isAdmin ? `
                   <div style="position: absolute; top: 6px; right: 8px; display: flex; gap: 6px; z-index: 5;">
                     <button class="edit-dept-btn" data-id="${d.id}" title="Edit Department" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 2px; display: flex; align-items: center;">
@@ -396,22 +398,34 @@ function renderTree() {
                     </button>
                   </div>
                 ` : ''}
-                <span class="small-text" style="font-weight: 700; color: var(--accent-navy-primary); text-transform: uppercase; font-size: 10px; display:block; margin-bottom: 4px; padding-right: 28px; text-align: left;">${escapeHTML(d.name)}</span>
-                <h4 class="card-title" style="font-size: 13px; font-weight: 600; text-align: left;">${escapeHTML(headName)}</h4>
-                <p class="small-text" style="color: var(--text-secondary); font-size:11px; text-align: left;">${escapeHTML(headTitle)}</p>
+                <span class="small-text" style="font-weight: 700; color: var(--accent-navy-primary); text-transform: uppercase; font-size: 10px; display:block; margin-bottom: 8px; padding-right: 28px; text-align: left;">${escapeHTML(d.name)}</span>
+                <div style="display:flex;align-items:center;gap:12px;text-align:left;">
+                  <img src="/avatars/user-${headUser?.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:36px;height:36px;border-radius:50%;object-fit:cover;display:${headUser ? 'block' : 'none'};" />
+                  <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-navy-primary);color:#fff;display:${headUser ? 'none' : 'flex'};align-items:center;justify-content:center;font-weight:bold;font-size:14px;flex-shrink:0;">${escapeHTML(headName[0] || '?')}</div>
+                  <div>
+                    <h4 class="card-title" style="font-size: 13px; font-weight: 600; text-align: left;">${escapeHTML(headName)}</h4>
+                    <p class="small-text" style="color: var(--text-secondary); font-size:11px; text-align: left;">${escapeHTML(headTitle)}</p>
+                  </div>
+                </div>
               </div>
 
               <!-- Connector Line to Department Members -->
               ${members.length > 0 ? `
-                <div style="width: 2px; height: 24px; background-color: var(--border-neutral);"></div>
+                <div style="width: 2px; height: 24px; background-color: var(--tree-line-color);"></div>
                 
                 <!-- Members vertical tree stack -->
-                <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+                <div style="display: flex; flex-direction: column; gap: 12px; align-items: center; width: 100%;">
                   ${members.map(m => `
-                    <div style="width: 2px; height: 8px; background-color: var(--border-neutral);"></div>
-                    <div style="padding: 8px 16px; border: 1px solid var(--border-neutral); border-radius: var(--radius-sm); text-align: center; font-size: 12px; background-color: var(--bg-primary); min-width: 140px; max-width: 200px;">
-                      <strong class="data-number" style="font-size: 12px;">${escapeHTML(m.firstName)} ${escapeHTML(m.lastName)}</strong>
-                      <div class="small-text" style="font-size:10px; margin-top:2px;">${escapeHTML(m.rank?.title || 'Employee')}</div>
+                    <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                      <div style="width: 2px; height: 12px; background-color: var(--tree-line-color);"></div>
+                      <div style="padding: 8px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-sm); text-align: left; background-color: var(--bg-primary); min-width: 140px; max-width: 200px; display: flex; align-items: center; gap: 8px;">
+                        <img src="/avatars/user-${m.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:24px;height:24px;border-radius:50%;object-fit:cover;display:block;" />
+                        <div style="width:24px;height:24px;border-radius:50%;background:var(--accent-navy-primary);color:#fff;display:none;align-items:center;justify-content:center;font-weight:bold;font-size:10px;flex-shrink:0;">${escapeHTML(m.firstName[0] || '?')}</div>
+                        <div>
+                          <strong class="data-number" style="font-size: 12px; display:block;">${escapeHTML(m.firstName)} ${escapeHTML(m.lastName)}</strong>
+                          <div class="small-text" style="font-size:10px; margin-top:2px;">${escapeHTML(m.rank?.title || 'Employee')}</div>
+                        </div>
+                      </div>
                     </div>
                   `).join('')}
                 </div>

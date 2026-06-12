@@ -1,0 +1,20 @@
+# .htaccess for Tascorr at https://soft.thinksafe.mv/tascorr/
+# Apache reverse-proxy: forwards /api/* to the Node.js backend,
+# and falls back to index.html for all SPA routes.
+
+Options -MultiViews
+RewriteEngine On
+RewriteBase /tascorr/
+
+# ── 1. Serve real files and directories directly (JS, CSS, images, etc.) ──
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# ── 2. Proxy /tascorr/api/* → Node.js backend ──
+# Plesk's Node.js wizard sets up a reverse proxy on the port you configure.
+# Adjust the port below to match whatever Plesk assigned (default: 5005).
+RewriteRule ^api/(.*)$ http://127.0.0.1:5005/api/$1 [P,L]
+
+# ── 3. SPA fallback: send everything else to index.html ──
+RewriteRule ^ index.html [L]

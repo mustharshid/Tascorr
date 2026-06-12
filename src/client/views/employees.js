@@ -232,6 +232,10 @@ export function renderEmployeesView() {
                 <option value="deactivated">Deactivated</option>
               </select>
             </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label for="edit-emp-password" class="small-text" style="font-weight: 600;">Reset Password (leave blank to keep current)</label>
+              <input type="password" id="edit-emp-password" placeholder="New password (min 12 chars, letters, numbers, symbols)" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background: var(--bg-secondary); color: var(--text-primary);" />
+            </div>
             <div style="display: flex; gap: 12px; margin-top: 8px;">
               <button type="submit" class="menu-item active" style="flex:1; justify-content:center; padding: 10px; border:none; font-weight:600;">Save Changes</button>
               <button id="close-edit-modal-btn" type="button" style="flex:1; padding: 10px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">Cancel</button>
@@ -282,7 +286,7 @@ export async function initEmployeesListeners() {
     });
 
     // Edit user row handler (Event delegation)
-    document.getElementById('employees-table-body')?.addEventListener('click', (e) => {
+    document.getElementById('employees-table-body')?.addEventListener('click', async (e) => {
       const editBtn = e.target.closest('.edit-emp-btn');
       if (editBtn) {
         const empId = Number(editBtn.dataset.id);
@@ -308,8 +312,36 @@ export async function initEmployeesListeners() {
           }
 
           document.getElementById('edit-emp-status').value = emp.status;
+          
+          const passwordInput = document.getElementById('edit-emp-password');
+          if (passwordInput) passwordInput.value = '';
 
           if (editModal) editModal.style.display = 'flex';
+        }
+      }
+
+      // Delete employee handler
+      const deleteBtn = e.target.closest('.delete-emp-btn');
+      if (deleteBtn) {
+        const empId = Number(deleteBtn.dataset.id);
+        const empName = deleteBtn.dataset.name || 'this employee';
+
+        if (!confirm(`Are you sure you want to delete "${empName}"? This action will deactivate their account.`)) {
+          return;
+        }
+
+        try {
+          deleteBtn.disabled = true;
+          deleteBtn.innerText = 'Deleting...';
+          await fetchApi('DELETE', `/users/${empId}`);
+          Notifications.success('Employee Deleted', `${empName} has been removed from the directory.`);
+          await loadEmployeesData();
+        } catch (err) {
+          console.error(err);
+          Notifications.error('Deletion Failed', err.message || 'Could not delete employee.');
+        } finally {
+          deleteBtn.disabled = false;
+          deleteBtn.innerText = 'Delete';
         }
       }
     });
@@ -328,23 +360,34 @@ export async function initEmployeesListeners() {
       const rankId = Number(document.getElementById('edit-emp-rank').value);
       const departmentId = document.getElementById('edit-emp-dept').value;
       const status = document.getElementById('edit-emp-status').value;
+      const password = document.getElementById('edit-emp-password').value;
 
       if (!firstName || !lastName) {
         Notifications.error('Validation Error', 'First name and Last name are required.');
         return;
       }
 
+      const updatePayload = {
+        firstName,
+        lastName,
+        rankId,
+        departmentId: departmentId ? Number(departmentId) : null,
+        status
+      };
+
+      if (password) {
+        if (password.length < 12 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password) || !/[^a-zA-Z0-9]/.test(password)) {
+          Notifications.error('Validation Error', 'Passwords must be at least 12 characters and meet complexity requirements (mixed case, number, symbol).');
+          return;
+        }
+        updatePayload.password = password;
+      }
+
       const submitBtn = editForm.querySelector('button[type="submit"]');
       try {
         if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = 'Saving...'; }
 
-        await fetchApi('PATCH', `/users/${empId}`, {
-          firstName,
-          lastName,
-          rankId,
-          departmentId: departmentId ? Number(departmentId) : null,
-          status
-        });
+        await fetchApi('PATCH', `/users/${empId}`, updatePayload);
 
         Notifications.success('User Profile Updated', 'Employee details modified successfully.');
         if (editModal) editModal.style.display = 'none';
@@ -518,11 +561,13 @@ async function loadEmployeesData() {
 
     if (ranks.length === 0) {
       ranks = [
-        { id: 1, title: 'Company Administrator', level: 0 },
-        { id: 2, title: 'Executive / Director', level: 1 },
-        { id: 3, title: 'VP / Department Head', level: 2 },
-        { id: 4, title: 'Manager / Team Leader', level: 3 },
-        { id: 5, title: 'Employee / Individual Contributor', level: 4 }
+        { id: 1, title: 'Administrator', level: 0 },
+        { id: 2, title: 'Chief Executive', level: 1 },
+        { id: 3, title: 'Deputy Chief Executive', level: 2 },
+        { id: 4, title: 'Executive / Director', level: 3 },
+        { id: 5, title: 'Department Head', level: 4 },
+        { id: 6, title: 'Manager', level: 5 },
+        { id: 7, title: 'Employee', level: 6 }
       ];
     }
 
@@ -618,9 +663,12 @@ function renderTable() {
         <td data-label="Rank Level" style="padding: 16px; color:var(--text-primary); font-weight:500;">${rankTitle} <span class="small-text">(Lvl ${rankLevel})</span></td>
         <td data-label="Department" style="padding: 16px;">${deptName}</td>
         <td data-label="Status" style="padding: 16px;">${statusPill}</td>
-        <td data-label="Actions" style="padding: 16px; text-align: right; display: flex; justify-content: flex-end; align-items: center; gap: 12px;">
-          <a href="#profile" class="small-text" style="color:var(--accent-navy-primary); font-weight:600; text-decoration:none;" onclick="localStorage.setItem('target_profile_id', ${e.id});">View Profile</a>
-          ${isAdmin ? `<button class="edit-emp-btn small-text" data-id="${e.id}" style="background: none; border: none; color: var(--accent-navy-primary); font-weight: 600; cursor: pointer; padding: 0;">Edit</button>` : ''}
+        <td data-label="Actions" style="padding: 16px; text-align: right;">
+          <div style="display: inline-flex; justify-content: flex-end; align-items: center; gap: 12px;">
+            <a href="#profile" class="small-text" style="color:var(--accent-navy-primary); font-weight:600; text-decoration:none;" onclick="localStorage.setItem('target_profile_id', ${e.id});">View Profile</a>
+            ${isAdmin ? `<button class="edit-emp-btn small-text" data-id="${e.id}" style="background: none; border: none; color: var(--accent-navy-primary); font-weight: 600; cursor: pointer; padding: 0;">Edit</button>` : ''}
+            ${isAdmin && e.id !== AuthState.currentUser?.id ? `<button class="delete-emp-btn small-text" data-id="${e.id}" data-name="${escapeHTML(e.firstName)} ${escapeHTML(e.lastName)}" style="background: none; border: none; color: var(--status-danger); font-weight: 600; cursor: pointer; padding: 0;">Delete</button>` : ''}
+          </div>
         </td>
       </tr>
     `;

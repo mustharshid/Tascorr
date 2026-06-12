@@ -4,6 +4,7 @@ import { resolve } from 'path';
 export default defineConfig({
   root: resolve(__dirname, 'src/client'),
   publicDir: resolve(__dirname, 'public'),
+  base: process.env.NODE_ENV === 'production' ? '/tascorr/' : '/',
   build: {
     outDir: resolve(__dirname, 'dist/client'),
     emptyOutDir: true,
@@ -14,10 +15,11 @@ export default defineConfig({
     }
   },
   server: {
+    host: true,   // bind to 0.0.0.0 so other devices can connect
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:5005',
+        target: 'http://127.0.0.1:5005',
         changeOrigin: true,
       }
     }

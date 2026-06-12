@@ -21,7 +21,10 @@ export class ApiError extends Error {
  * @returns {Promise<any>} Response Data
  */
 export async function fetchApi(method, path, body = null) {
-  const url = path.startsWith('/api') ? path : `/api${path}`;
+  // Build absolute URL so fetch always targets /api/... at the server origin,
+  // regardless of what subdirectory the HTML page was served from.
+  const apiPath = path.startsWith('/api') ? path : `/api${path}`;
+  const url = `${window.location.origin}${apiPath}`;
   
   const headers = {
     'Accept': 'application/json',

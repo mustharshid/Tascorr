@@ -1,3 +1,8 @@
+//superadmin@tascorr.com	Superadmin123!	Global Superadmin
+//admin@company.com	CompanyAdmin123!	Company Administrator
+//head@company.com	CompanyAdmin123!	VP / Department Head
+//employee@company.com	CompanyAdmin123!	Employee
+
 // seed.ts - Seed script for populating development database tables.
 
 import { PrismaClient } from '@prisma/client';
@@ -48,7 +53,7 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: superadminEmail },
-    update: {},
+    update: { passwordHash: superadminHash, status: 'active' },
     create: {
       tenantId: 0,
       email: superadminEmail,
@@ -76,56 +81,78 @@ async function main() {
   // Default Ranks for Tenant 1
   const adminRank = await prisma.rank.upsert({
     where: { id: 1 },
-    update: {},
+    update: { title: 'Administrator', level: 0 },
     create: {
       id: 1,
       tenantId: 1,
-      title: 'Company Administrator',
+      title: 'Administrator',
       level: 0,
     },
   });
 
-  const execRank = await prisma.rank.upsert({
+  const ceoRank = await prisma.rank.upsert({
     where: { id: 2 },
-    update: {},
+    update: { title: 'Chief Executive', level: 1 },
     create: {
       id: 2,
       tenantId: 1,
-      title: 'Executive / Director',
+      title: 'Chief Executive',
       level: 1,
     },
   });
 
-  const deptHeadRank = await prisma.rank.upsert({
+  const deputyCeoRank = await prisma.rank.upsert({
     where: { id: 3 },
-    update: {},
+    update: { title: 'Deputy Chief Executive', level: 2 },
     create: {
       id: 3,
       tenantId: 1,
-      title: 'VP / Department Head',
+      title: 'Deputy Chief Executive',
       level: 2,
     },
   });
 
-  const managerRank = await prisma.rank.upsert({
+  const execRank = await prisma.rank.upsert({
     where: { id: 4 },
-    update: {},
+    update: { title: 'Executive / Director', level: 3 },
     create: {
       id: 4,
       tenantId: 1,
-      title: 'Manager / Team Leader',
+      title: 'Executive / Director',
       level: 3,
     },
   });
 
-  const employeeRank = await prisma.rank.upsert({
+  const deptHeadRank = await prisma.rank.upsert({
     where: { id: 5 },
-    update: {},
+    update: { title: 'Department Head', level: 4 },
     create: {
       id: 5,
       tenantId: 1,
-      title: 'Employee / Individual Contributor',
+      title: 'Department Head',
       level: 4,
+    },
+  });
+
+  const managerRank = await prisma.rank.upsert({
+    where: { id: 6 },
+    update: { title: 'Manager', level: 5 },
+    create: {
+      id: 6,
+      tenantId: 1,
+      title: 'Manager',
+      level: 5,
+    },
+  });
+
+  const employeeRank = await prisma.rank.upsert({
+    where: { id: 7 },
+    update: { title: 'Employee', level: 6 },
+    create: {
+      id: 7,
+      tenantId: 1,
+      title: 'Employee',
+      level: 6,
     },
   });
 
@@ -133,7 +160,7 @@ async function main() {
   const companyAdminHash = await bcrypt.hash('CompanyAdmin123!', 12);
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@company.com' },
-    update: {},
+    update: { passwordHash: companyAdminHash, status: 'active' },
     create: {
       tenantId: 1,
       email: 'admin@company.com',
@@ -147,7 +174,7 @@ async function main() {
 
   const deptHeadUser = await prisma.user.upsert({
     where: { email: 'head@company.com' },
-    update: {},
+    update: { passwordHash: companyAdminHash, status: 'active' },
     create: {
       tenantId: 1,
       email: 'head@company.com',
@@ -161,7 +188,7 @@ async function main() {
 
   const employeeUser = await prisma.user.upsert({
     where: { email: 'employee@company.com' },
-    update: {},
+    update: { passwordHash: companyAdminHash, status: 'active' },
     create: {
       tenantId: 1,
       email: 'employee@company.com',

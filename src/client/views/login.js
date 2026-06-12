@@ -13,7 +13,7 @@ export function renderLoginView() {
       <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
         <img src="/tascorrLogo.png" alt="Tascorr Logo" style="width: 48px; height: 48px; object-fit: contain;" onerror="this.style.display='none'">
         <div>
-          <h2 class="section-title" style="font-size: 24px; font-weight: 700;">Sign in to tascorr</h2>
+          <h2 class="section-title" style="font-size: 24px; font-weight: 700;">Sign in to Tascorr</h2>
           <p class="small-text" style="margin-top: 4px;">Enter your credentials to access your company workspace.</p>
         </div>
       </div>

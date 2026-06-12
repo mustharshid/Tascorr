@@ -1,6 +1,7 @@
 {
   "name": "tascorr",
   "version": "0.1.0",
+  "type": "commonjs",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -8,7 +9,9 @@
     "preview": "vite preview",
     "seed": "tsx prisma/seed.ts",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "start": "node ./dist/server/index.js"
+    "start": "node dist/server/server/index.js",
+    "db:migrate": "prisma migrate deploy",
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",

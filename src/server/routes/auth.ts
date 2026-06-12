@@ -159,13 +159,13 @@ router.post('/login', async (req: Request, res: Response) => {
       departmentId: user.departmentId,
     };
 
-    const token = jwt.sign(sessionPayload, JWT_SECRET, { expiresIn: '8h' });
+    const token = jwt.sign(sessionPayload, JWT_SECRET, { expiresIn: '365d' });
 
     // 5. Save cookie token (HttpOnly protection)
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 8 * 60 * 60 * 1000, // 8 hours
+      maxAge: 365 * 24 * 60 * 60 * 1000, // 365 days
       sameSite: 'strict',
     });
 

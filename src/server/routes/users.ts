@@ -73,6 +73,16 @@ router.post('/', authenticateSession, requireAdmin, async (req: Request, res: Re
       return res.status(400).json({ error: 'Selected rank level is invalid for this workspace.' });
     }
 
+    // Enforce single Company Administrator per tenant (level 0)
+    if (rank.level === 0) {
+      const existingAdmin = await prisma.user.findFirst({
+        where: { tenantId, rank: { level: 0 }, deletedAt: null }
+      });
+      if (existingAdmin) {
+        return res.status(409).json({ error: 'Only one Company Administrator is allowed per organization. An administrator already exists.' });
+      }
+    }
+
     // Verify department belongs to the tenant
     if (departmentId) {
       const dept = await prisma.department.findUnique({
@@ -200,6 +210,8 @@ router.post('/ranks', authenticateSession, requireAdmin, async (req: Request, re
   }
 });
 
+import { PolicyService } from '../services/policy.js';
+
 /**
  * GET /api/users
  * List users (Authenticated scopes)
@@ -235,6 +247,16 @@ router.get('/', authenticateSession, async (req: Request, res: Response) => {
         lastName: 'asc',
       },
     });
+
+    if (req.query.assignableOnly === 'true') {
+      const filteredUsers = [];
+      for (const u of users) {
+        if (await PolicyService.canAssignTask(req.user!, u.id)) {
+          filteredUsers.push(u);
+        }
+      }
+      return res.status(200).json({ users: filteredUsers });
+    }
 
     return res.status(200).json({ users });
   } catch (error: any) {
@@ -356,6 +378,17 @@ router.patch('/:id', authenticateSession, async (req: Request, res: Response) =>
         if (!rank || rank.tenantId !== tenantId) {
           return res.status(400).json({ error: 'Invalid rank selected.' });
         }
+
+        // Enforce single Company Administrator per tenant (level 0)
+        if (rank.level === 0) {
+          const existingAdmin = await prisma.user.findFirst({
+            where: { tenantId, rank: { level: 0 }, deletedAt: null, id: { not: userId } }
+          });
+          if (existingAdmin) {
+            return res.status(409).json({ error: 'Only one Company Administrator is allowed per organization. An administrator already exists.' });
+          }
+        }
+
         updateData.rankId = Number(rankId);
       }
       if (departmentId !== undefined) {
@@ -410,7 +443,7 @@ router.get('/tenant/details', authenticateSession, requireAdmin, async (req: Req
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true, subscriptionTier: true, status: true }
+      select: { id: true, name: true, subscriptionTier: true, status: true, allowCrossDeptPeerAssignment: true }
     });
     return res.status(200).json({ tenant });
   } catch (error: any) {
@@ -424,14 +457,19 @@ router.get('/tenant/details', authenticateSession, requireAdmin, async (req: Req
  */
 router.patch('/tenant/details', authenticateSession, requireAdmin, async (req: Request, res: Response) => {
   const tenantId = req.user!.tenantId;
-  const { name } = req.body;
+  const { name, allowCrossDeptPeerAssignment } = req.body;
   if (!name || name.trim().length === 0) {
     return res.status(400).json({ error: 'Company name is required.' });
+  }
+  
+  const updateData: any = { name: name.trim() };
+  if (typeof allowCrossDeptPeerAssignment === 'boolean') {
+    updateData.allowCrossDeptPeerAssignment = allowCrossDeptPeerAssignment;
   }
   try {
     const updated = await prisma.tenant.update({
       where: { id: tenantId },
-      data: { name: name.trim() }
+      data: updateData
     });
 
     // Write audit log
@@ -442,7 +480,7 @@ router.patch('/tenant/details', authenticateSession, requireAdmin, async (req: R
         action: 'TENANT_UPDATE',
         entityType: 'Tenant',
         entityId: tenantId,
-        metadata: JSON.stringify({ name: name.trim() }),
+        metadata: JSON.stringify(updateData),
       },
     });
 
@@ -525,6 +563,52 @@ router.delete('/ranks/:rankId', authenticateSession, requireAdmin, async (req: R
     return res.status(200).json({ message: 'Rank deleted successfully.' });
   } catch (error: any) {
     return res.status(500).json({ error: `Rank deletion error: ${error.message}` });
+  }
+});
+
+/**
+ * DELETE /api/users/:id
+ * Soft-delete an employee (Admin only). Sets deletedAt timestamp.
+ * Admins cannot delete themselves.
+ */
+router.delete('/:id', authenticateSession, requireAdmin, async (req: Request, res: Response) => {
+  const tenantId = req.user!.tenantId;
+  const userId = Number(req.params.id);
+  if (isNaN(userId)) return res.status(400).json({ error: 'Invalid user ID.' });
+
+  // Prevent self-deletion
+  if (userId === req.user!.userId) {
+    return res.status(403).json({ error: 'You cannot delete your own account.' });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { rank: true }
+    });
+    if (!user || user.tenantId !== tenantId) {
+      return res.status(404).json({ error: 'Employee not found within your organization.' });
+    }
+
+    if (user.deletedAt) {
+      return res.status(409).json({ error: 'This employee has already been deleted.' });
+    }
+
+    // Prevent deleting a user with a higher or equal rank (lower level number = higher authority)
+    const targetRankLevel = user.rank?.level ?? 999;
+    const currentRankLevel = req.user!.rankLevel;
+    if (targetRankLevel <= currentRankLevel) {
+      return res.status(403).json({ error: 'You cannot delete an employee of equal or higher rank.' });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { deletedAt: new Date(), status: 'deactivated' }
+    });
+
+    return res.status(200).json({ message: 'Employee deleted successfully.' });
+  } catch (error: any) {
+    return res.status(500).json({ error: `Deletion error: ${error.message}` });
   }
 });
 

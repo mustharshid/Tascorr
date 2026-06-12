@@ -4,6 +4,7 @@
 import { fetchApi } from '../services/api.js';
 import { Notifications } from '../services/notifications.js';
 import { escapeHTML } from '../services/sanitize.js';
+import { AuthState } from '../services/auth-state.js';
 
 export class TaskCreateDrawer {
   constructor(onSuccessCallback) {
@@ -17,11 +18,17 @@ export class TaskCreateDrawer {
   async render() {
     // 1. Fetch available assignees and departments first
     try {
-      const usersData = await fetchApi('GET', '/users');
+      const usersData = await fetchApi('GET', '/users?assignableOnly=true');
       this.users = usersData.users || [];
       
-      const deptsData = await fetchApi('GET', '/departments');
-      this.departments = deptsData.departments || [];
+      // Derive assignable departments directly from the assignable users' departments
+      const deptMap = new Map();
+      this.users.forEach(u => {
+        if (u.departmentId && u.department) {
+          deptMap.set(u.departmentId, u.department.name);
+        }
+      });
+      this.departments = Array.from(deptMap.entries()).map(([id, name]) => ({ id, name }));
     } catch (err) {
       console.error(err);
       Notifications.error('Data Loading Failed', 'Could not load assignees list.');
@@ -51,28 +58,14 @@ export class TaskCreateDrawer {
     if (!this.drawerEl) {
       this.drawerEl = document.createElement('div');
       this.drawerEl.id = 'task-create-drawer';
-      this.drawerEl.style.cssText = `
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: 460px;
-        max-width: 100vw;
-        background-color: var(--bg-primary);
-        border-left: 1px solid var(--border-neutral);
-        box-shadow: -10px 0 25px -5px rgba(0, 0, 0, 0.1);
-        z-index: 1001;
-        transform: translateX(100%);
-        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      `;
       document.body.appendChild(this.drawerEl);
     }
 
+    // Assignable users are already filtered by the backend via assignableOnly=true
+    const filteredUsers = this.users;
+
     // Assignee option elements rendering
-    const assigneeOptions = this.users.map(u => 
+    const assigneeOptions = filteredUsers.map(u => 
       `<option value="${u.id}">${escapeHTML(u.firstName)} ${escapeHTML(u.lastName)} (${escapeHTML(u.rank?.title || 'Employee')})</option>`
     ).join('');
 
@@ -81,86 +74,183 @@ export class TaskCreateDrawer {
       `<option value="${d.id}">${escapeHTML(d.name)}</option>`
     ).join('');
 
-    this.drawerEl.innerHTML = `
-      <!-- Header -->
-      <div style="padding: 24px; border-bottom: 1px solid var(--border-neutral); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-        <div>
-          <h3 class="card-title" style="font-size: 20px;">Create New Task</h3>
-          <p class="small-text">Publish and assign a new workforce task item</p>
-        </div>
-        <button id="close-drawer-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
-      </div>
+    const isMobile = window.innerWidth <= 768;
 
-      <!-- Content Scroll Wells -->
-      <div style="flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px;">
-        <div id="drawer-error-alert" style="display: none; padding: 12px; background-color: rgba(220, 38, 38, 0.1); color: var(--status-danger); font-size: 13px; font-weight: 500; border-radius: var(--radius-md);"></div>
-
-        <form id="drawer-task-form" style="display: flex; flex-direction: column; gap: 16px;">
-          <!-- Task Title -->
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label for="task-title" class="small-text" style="font-weight: 600; color: var(--text-primary);">Task Title</label>
-            <input type="text" id="task-title" required maxlength="100" placeholder="Consolidated Financial Review" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;" />
+    if (isMobile) {
+      this.drawerEl.innerHTML = `
+        <div style="display:flex; flex-direction:column; height:100%; width: 100%; background: #fff; padding: 24px; padding-bottom: 0; position: relative;">
+          <!-- Drag Handle -->
+          <div style="width: 48px; height: 5px; background: #E5E7EB; border-radius: 3px; margin: 0 auto 20px auto; flex-shrink: 0;"></div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-shrink: 0;">
+            <h2 style="font-size: 20px; font-weight: 700; color: #111827;">New Task</h2>
+            <button id="close-drawer-btn" style="background: #F3F4F6; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #6B7280;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
           </div>
 
-          <!-- Description -->
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label for="task-desc" class="small-text" style="font-weight: 600; color: var(--text-primary);">Description</label>
-            <textarea id="task-desc" required maxlength="2000" placeholder="Provide clear contextual description parameters..." rows="4" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: vertical;"></textarea>
-          </div>
+          <div id="drawer-error-alert" style="display: none; padding: 12px; background-color: rgba(220, 38, 38, 0.1); color: var(--status-danger); font-size: 13px; font-weight: 500; border-radius: var(--radius-md); margin-bottom: 16px;"></div>
 
-          <!-- Due Date & Priority Grid -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="task-due" class="small-text" style="font-weight: 600; color: var(--text-primary);">Due Date</label>
-              <input type="date" id="task-due" required style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;" />
+          <form id="drawer-task-form" style="display: flex; flex-direction: column; gap: 24px; flex: 1; overflow-y: auto; padding-bottom: 100px;">
+            <!-- Task Title -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: #6B7280; letter-spacing: 0.05em; text-transform: uppercase;">Task Title</label>
+              <input type="text" id="task-title" required maxlength="100" placeholder="What needs to be done?" style="padding: 16px; border: none; border-radius: 16px; font-size: 16px; background-color: #F3F4F6; color: #111827; outline: none; font-weight: 500;" />
             </div>
 
+            <!-- Description -->
+            <textarea id="task-desc" required maxlength="2000" placeholder="Description (Optional)" style="padding: 16px; border: none; border-radius: 16px; font-size: 14px; background-color: #F3F4F6; color: #111827; outline: none; resize: none; height: 80px;"></textarea>
+
+            <!-- Assign To -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: #6B7280; letter-spacing: 0.05em; text-transform: uppercase;">Assign To</label>
+              <div style="display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none;">
+                ${filteredUsers.map(u => `
+                  <div class="mobile-assignee-opt" data-id="${u.id}" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: #F3F4F6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; border: 2px solid transparent; transition: all 0.2s;">
+                      ${escapeHTML(u.firstName[0])}
+                    </div>
+                    <span style="font-size: 11px; font-weight: 500; color: #6B7280;">${escapeHTML(u.firstName)}</span>
+                  </div>
+                `).join('')}
+              </div>
+              <input type="hidden" id="task-assignee" required />
+            </div>
+
+            <!-- Priority -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: #6B7280; letter-spacing: 0.05em; text-transform: uppercase;">Priority</label>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <div class="mobile-priority-opt active" data-val="Medium" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #E0E7FF; color: #4338CA; cursor: pointer;">Medium</div>
+                <div class="mobile-priority-opt" data-val="Low" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #F3F4F6; color: #6B7280; cursor: pointer;">Low</div>
+                <div class="mobile-priority-opt" data-val="High" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #F3F4F6; color: #6B7280; cursor: pointer;">High</div>
+                <div class="mobile-priority-opt" data-val="Critical" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #F3F4F6; color: #6B7280; cursor: pointer;">Critical</div>
+              </div>
+              <input type="hidden" id="task-priority" value="Medium" />
+            </div>
+
+            <!-- Due Date -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: #6B7280; letter-spacing: 0.05em; text-transform: uppercase;">Due</label>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <div class="mobile-due-opt active" data-offset="0" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #E0E7FF; color: #4338CA; cursor: pointer;">Today</div>
+                <div class="mobile-due-opt" data-offset="1" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #F3F4F6; color: #6B7280; cursor: pointer;">Tomorrow</div>
+                <div class="mobile-due-opt" data-offset="7" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #F3F4F6; color: #6B7280; cursor: pointer;">Next week</div>
+              </div>
+              <input type="hidden" id="task-due" value="${new Date().toISOString().split('T')[0]}" required />
+            </div>
+
+            <input type="hidden" id="task-dept" value="" />
+            <input type="checkbox" id="task-recurring" style="display: none;" />
+          </form>
+
+          <!-- Fixed Bottom Button -->
+          <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 16px 24px; background: linear-gradient(to top, rgba(255,255,255,1) 80%, rgba(255,255,255,0)); border-radius: 0 0 32px 32px;">
+            <button id="submit-task-btn" style="width: 100%; background: #3B82F6; color: white; padding: 16px; border: none; border-radius: 100px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(59,130,246,0.3);">
+              Create & Assign
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      this.drawerEl.innerHTML = `
+        <!-- Header -->
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-neutral); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+          <div>
+            <h3 class="card-title" style="font-size: 20px;">Create New Task</h3>
+            <p class="small-text">Publish and assign a new workforce task item</p>
+          </div>
+          <button id="close-drawer-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+        </div>
+
+        <!-- Content Scroll Wells -->
+        <div style="flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+          <div id="drawer-error-alert" style="display: none; padding: 12px; background-color: rgba(220, 38, 38, 0.1); color: var(--status-danger); font-size: 13px; font-weight: 500; border-radius: var(--radius-md);"></div>
+
+          <form id="drawer-task-form" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Task Title -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="task-priority" class="small-text" style="font-weight: 600; color: var(--text-primary);">Priority</label>
-              <select id="task-priority" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;">
-                <option value="Low">Low Priority</option>
-                <option value="Medium" selected>Medium Priority</option>
-                <option value="High">High Priority</option>
-                <option value="Critical">Critical Priority</option>
+              <label for="task-title" class="small-text" style="font-weight: 600; color: var(--text-primary);">Task Title</label>
+              <input type="text" id="task-title" required maxlength="100" placeholder="Consolidated Financial Review" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;" />
+            </div>
+
+            <!-- Description -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label for="task-desc" class="small-text" style="font-weight: 600; color: var(--text-primary);">Description</label>
+              <textarea id="task-desc" required maxlength="2000" placeholder="Provide clear contextual description parameters..." rows="4" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: vertical;"></textarea>
+            </div>
+
+            <!-- Due Date & Priority Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label for="task-due" class="small-text" style="font-weight: 600; color: var(--text-primary);">Due Date</label>
+                <input type="date" id="task-due" required style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;" />
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label for="task-priority" class="small-text" style="font-weight: 600; color: var(--text-primary);">Priority</label>
+                <select id="task-priority" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;">
+                  <option value="Low">Low Priority</option>
+                  <option value="Medium" selected>Medium Priority</option>
+                  <option value="High">High Priority</option>
+                  <option value="Critical">Critical Priority</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Department Scoping -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label for="task-dept" class="small-text" style="font-weight: 600; color: var(--text-primary);">Department Scoping</label>
+              <select id="task-dept" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;">
+                <option value="">General / Tenant Scope</option>
+                ${deptOptions}
               </select>
             </div>
-          </div>
 
-          <!-- Department Scoping -->
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label for="task-dept" class="small-text" style="font-weight: 600; color: var(--text-primary);">Department Scoping</label>
-            <select id="task-dept" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;">
-              <option value="">General / Tenant Scope</option>
-              ${deptOptions}
-            </select>
-          </div>
-
-          <!-- Assignee & Workload Awareness Banner -->
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label for="task-assignee" class="small-text" style="font-weight: 600; color: var(--text-primary);">Assignee</label>
-            <select id="task-assignee" required style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;">
-              <option value="" disabled selected>Select an assignee...</option>
-              ${assigneeOptions}
-            </select>
-
-            <!-- Dynamic Workload Info Block -->
-            <div id="workload-banner" style="display: none; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-neutral); margin-top: 6px; font-size: 12px;">
-              <!-- Populate dynamically -->
+            <!-- Recurring Task Options -->
+            <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); background-color: var(--bg-secondary);">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="task-recurring" style="cursor: pointer; width: 16px; height: 16px;" />
+                <label for="task-recurring" class="small-text" style="font-weight: 600; color: var(--text-primary); cursor: pointer;">Enable Task Recurrence</label>
+              </div>
+              
+              <div id="recurring-interval-wrapper" style="display: none; flex-direction: column; gap: 6px;">
+                <label for="task-interval" class="small-text" style="font-weight: 600; color: var(--text-primary);">Recurrence Interval</label>
+                <select id="task-interval" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-primary); color: var(--text-primary); outline: none;">
+                  <option value="Daily">Daily</option>
+                  <option value="Weekly" selected>Weekly</option>
+                  <option value="Monthly">Monthly</option>
+                </select>
+              </div>
             </div>
-          </div>
-        </form>
-      </div>
 
-      <!-- Action Footer -->
-      <div style="padding: 16px 24px; border-top: 1px solid var(--border-neutral); background-color: var(--bg-secondary); display: flex; gap: 12px; flex-shrink: 0;">
-        <button id="submit-task-btn" type="button" class="menu-item active" style="flex: 1; justify-content: center; padding: 10px; border: none; font-weight: 600; font-size: 13px;">
-          Create Task
-        </button>
-        <button id="cancel-drawer-btn" type="button" style="flex: 1; padding: 10px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; color: var(--text-primary); background-color: var(--bg-primary); cursor: pointer; text-align: center;">
-          Cancel
-        </button>
-      </div>
-    `;
+            <!-- Assignee & Workload Awareness Banner -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label for="task-assignee" class="small-text" style="font-weight: 600; color: var(--text-primary);">Assignee</label>
+              <select id="task-assignee" required style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;">
+                <option value="" disabled selected>Select an assignee...</option>
+                ${assigneeOptions}
+              </select>
+
+              <!-- Dynamic Workload Info Block -->
+              <div id="workload-banner" style="display: none; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-neutral); margin-top: 6px; font-size: 12px;">
+                <!-- Populate dynamically -->
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Action Footer -->
+        <div style="padding: 16px 24px; border-top: 1px solid var(--border-neutral); background-color: var(--bg-secondary); display: flex; gap: 12px; flex-shrink: 0;">
+          <button id="submit-task-btn" type="button" class="menu-item active" style="flex: 1; justify-content: center; padding: 10px; border: none; font-weight: 600; font-size: 13px;">
+            Create Task
+          </button>
+          <button id="cancel-drawer-btn" type="button" style="flex: 1; padding: 10px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; color: var(--text-primary); background-color: var(--bg-primary); cursor: pointer; text-align: center;">
+            Cancel
+          </button>
+        </div>
+      `;
+    }
 
     this.initListeners();
   }
@@ -170,40 +260,109 @@ export class TaskCreateDrawer {
     const closeBtn = document.getElementById('close-drawer-btn');
     const cancelBtn = document.getElementById('cancel-drawer-btn');
     const submitBtn = document.getElementById('submit-task-btn');
+    
+    // Desktop specific elements
     const assigneeSelect = document.getElementById('task-assignee');
     const workloadBanner = document.getElementById('workload-banner');
+    const recurringCheckbox = document.getElementById('task-recurring');
+    const intervalWrapper = document.getElementById('recurring-interval-wrapper');
 
     closeBtn?.addEventListener('click', () => this.close());
     cancelBtn?.addEventListener('click', () => this.close());
 
-    // Workload awareness listener (Section 4)
-    assigneeSelect?.addEventListener('change', () => {
-      const selectedId = Number(assigneeSelect.value);
-      const user = this.users.find(u => u.id === selectedId);
-      
-      if (user && workloadBanner) {
-        // Fetch or estimate user workload. Since we fetch users with their active task counts,
-        // let's display info. If server returns it or we calculate it.
-        // Wait, standard users has active workload list. Let's see if we can query tasks 
-        // to count or if user object has tasks. We will mock active count or display placeholder:
-        // Let's assume standard count.
-        // Wait, does `/api/users` return active tasks count? No, but we can compute it if we fetched 
-        // tasks or keep a generic alert. Let's show:
-        const title = user.rank?.title || 'Employee';
+    if (recurringCheckbox && intervalWrapper) {
+      recurringCheckbox.addEventListener('change', () => {
+        intervalWrapper.style.display = recurringCheckbox.checked ? 'flex' : 'none';
+      });
+    }
+
+    // Workload awareness listener (Desktop)
+    if (assigneeSelect && workloadBanner) {
+      assigneeSelect.addEventListener('change', () => {
+        const selectedId = Number(assigneeSelect.value);
+        const user = this.users.find(u => u.id === selectedId);
         
-        // Let's build a nice status indicator
-        workloadBanner.style.display = 'block';
-        workloadBanner.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
-        workloadBanner.style.borderColor = 'rgba(37, 99, 235, 0.2)';
-        workloadBanner.innerHTML = `
-          <strong style="color: var(--text-primary);">Workload awareness:</strong> 
-          Assigned to <strong>${user.firstName}</strong> (${title}). 
-          Verify availability before assigning critical operations.
-        `;
-      }
-    });
+        if (user) {
+          const title = user.rank?.title || 'Employee';
+          workloadBanner.style.display = 'block';
+          workloadBanner.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
+          workloadBanner.style.borderColor = 'rgba(37, 99, 235, 0.2)';
+          workloadBanner.innerHTML = `
+            <strong style="color: var(--text-primary);">Workload awareness:</strong> 
+            Assigned to <strong>${user.firstName}</strong> (${title}). 
+            Verify availability before assigning critical operations.
+          `;
+        }
+      });
+    }
+
+    // Mobile Custom Selectors
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      // Priority Pills
+      const priorityInput = document.getElementById('task-priority');
+      document.querySelectorAll('.mobile-priority-opt').forEach(opt => {
+        opt.addEventListener('click', () => {
+          document.querySelectorAll('.mobile-priority-opt').forEach(o => {
+            o.classList.remove('active');
+            o.style.background = '#F3F4F6';
+            o.style.color = '#6B7280';
+          });
+          opt.classList.add('active');
+          opt.style.background = '#E0E7FF';
+          opt.style.color = '#4338CA';
+          if (priorityInput) priorityInput.value = opt.dataset.val;
+        });
+      });
+
+      // Due Date Pills
+      const dueInput = document.getElementById('task-due');
+      document.querySelectorAll('.mobile-due-opt').forEach(opt => {
+        opt.addEventListener('click', () => {
+          document.querySelectorAll('.mobile-due-opt').forEach(o => {
+            o.classList.remove('active');
+            o.style.background = '#F3F4F6';
+            o.style.color = '#6B7280';
+          });
+          opt.classList.add('active');
+          opt.style.background = '#E0E7FF';
+          opt.style.color = '#4338CA';
+          
+          if (dueInput) {
+            const offset = parseInt(opt.dataset.offset, 10);
+            const d = new Date();
+            d.setDate(d.getDate() + offset);
+            dueInput.value = d.toISOString().split('T')[0];
+          }
+        });
+      });
+
+      // Assignee Avatar Scroll
+      const assigneeHidden = document.getElementById('task-assignee');
+      document.querySelectorAll('.mobile-assignee-opt').forEach(opt => {
+        opt.addEventListener('click', () => {
+          document.querySelectorAll('.mobile-assignee-opt > div').forEach(avatar => {
+            avatar.style.border = '2px solid transparent';
+          });
+          opt.firstElementChild.style.border = '2px solid #3B82F6';
+          if (assigneeHidden) assigneeHidden.value = opt.dataset.id;
+        });
+      });
+    }
 
     submitBtn?.addEventListener('click', () => {
+      // Ensure assignee is selected on mobile before submitting
+      if (isMobile) {
+        const assigneeHidden = document.getElementById('task-assignee');
+        if (!assigneeHidden || !assigneeHidden.value) {
+          const errorAlert = document.getElementById('drawer-error-alert');
+          if (errorAlert) {
+            errorAlert.innerText = 'Please assign someone by tapping an avatar.';
+            errorAlert.style.display = 'block';
+          }
+          return;
+        }
+      }
       form?.dispatchEvent(new Event('submit', { cancelable: true }));
     });
 
@@ -216,6 +375,8 @@ export class TaskCreateDrawer {
       const priority = document.getElementById('task-priority').value;
       const departmentId = document.getElementById('task-dept').value;
       const assigneeId = document.getElementById('task-assignee').value;
+      const isRecurring = recurringCheckbox.checked;
+      const recurrenceInterval = isRecurring ? document.getElementById('task-interval').value : null;
 
       const errorAlert = document.getElementById('drawer-error-alert');
       if (errorAlert) {
@@ -268,6 +429,8 @@ export class TaskCreateDrawer {
           priority,
           departmentId: departmentId ? Number(departmentId) : null,
           assigneeIds: [Number(assigneeId)],
+          isRecurring,
+          recurrenceInterval,
         });
 
         Notifications.success('Task Created', 'Task assigned successfully.');
@@ -287,6 +450,7 @@ export class TaskCreateDrawer {
     });
 
     function showError(msg) {
+      const errorAlert = document.getElementById('drawer-error-alert');
       if (errorAlert) {
         errorAlert.innerText = msg;
         errorAlert.style.display = 'block';
@@ -298,7 +462,7 @@ export class TaskCreateDrawer {
     this.render().then(() => {
       this.overlayEl.style.pointerEvents = 'auto';
       this.overlayEl.style.opacity = '1';
-      this.drawerEl.style.transform = 'translateX(0)';
+      this.drawerEl.classList.add('open');
     });
   }
 
@@ -308,7 +472,7 @@ export class TaskCreateDrawer {
       this.overlayEl.style.pointerEvents = 'none';
     }
     if (this.drawerEl) {
-      this.drawerEl.style.transform = 'translateX(100%)';
+      this.drawerEl.classList.remove('open');
     }
   }
 }
