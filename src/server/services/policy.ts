@@ -64,8 +64,8 @@ export class PolicyService {
     user: IAuthSession,
     assigneeId: number
   ): Promise<boolean> {
-    // Rule: The logged-in user cannot assign tasks to themselves
-    if (user.userId === assigneeId) return false;
+    // Rule: The logged-in user can assign tasks to themselves
+    if (user.userId === assigneeId) return true;
 
     const assignee = await prisma.user.findUnique({
       where: { id: assigneeId },

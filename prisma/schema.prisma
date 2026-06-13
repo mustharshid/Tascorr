@@ -18,6 +18,7 @@ model Tenant {
   subscriptionTier        Int                       @default(1) // Tier 1, 2, 3
   status                  String                    @default("active") // active, suspended
   allowCrossDeptPeerAssignment Boolean              @default(true) // If true, same rank can assign across depts. If false, only same rank within same dept.
+  slaAccessLevel          Int                       @default(3) // Min rank level allowed to access SLA analytics
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
   

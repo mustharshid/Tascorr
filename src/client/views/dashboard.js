@@ -41,14 +41,14 @@ export function renderDashboardView() {
           <div class="dashboard-grid">
             <!-- Team Workload Allocation -->
             <div class="grid-col-6 widget-card" style="display: flex; flex-direction: column;">
-              <h3 class="card-title" style="margin-bottom: 16px;">Team Workload Allocation</h3>
+              <h3 class="card-title" style="margin-bottom: 16px; display: flex; align-items: center;">Team Workload Allocation<div class="tooltip-container"><span class="help-icon">?</span><span class="tooltip-text">A real-time overview of active and blocked tasks assigned to each team member.</span></div></h3>
               <div id="workload-list" style="display: flex; flex-direction: column; gap: 16px; flex: 1;">
               </div>
             </div>
 
             <!-- Departmental Activity -->
             <div class="grid-col-6 widget-card">
-              <h3 class="card-title" style="margin-bottom: 16px;">Departmental Productivity Index</h3>
+              <h3 class="card-title" style="margin-bottom: 16px; display: flex; align-items: center;">Departmental Productivity Index<div class="tooltip-container"><span class="help-icon">?</span><span class="tooltip-text">Task completion rates and efficiency metrics grouped by department.</span></div></h3>
               <div id="departmental-list" style="display: flex; flex-direction: column; gap: 12px;">
               </div>
             </div>
@@ -58,14 +58,14 @@ export function renderDashboardView() {
           <div class="dashboard-grid">
             <!-- Recent Task Activity Log -->
             <div class="grid-col-8 widget-card">
-              <h3 class="card-title" style="margin-bottom: 16px;">Recent Organizational Activity</h3>
+              <h3 class="card-title" style="margin-bottom: 16px; display: flex; align-items: center;">Recent Organizational Activity<div class="tooltip-container"><span class="help-icon">?</span><span class="tooltip-text">Chronological history of recent task actions and updates.</span></div></h3>
               <div id="activity-log-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 300px; overflow-y: auto;">
               </div>
             </div>
 
             <!-- Notification Matrix -->
             <div class="grid-col-4 widget-card">
-              <h3 class="card-title" style="margin-bottom: 16px;">Notification Matrix</h3>
+              <h3 class="card-title" style="margin-bottom: 16px; display: flex; align-items: center;">Notification Matrix<div class="tooltip-container"><span class="help-icon">?</span><span class="tooltip-text">Important alerts and updates requiring your attention.</span></div></h3>
               <div id="notifications-list" style="display: flex; flex-direction: column; gap: 12px;">
               </div>
             </div>
@@ -164,7 +164,7 @@ export async function initDashboard() {
       metricsGrid.innerHTML = `
         <div class="grid-col-3 widget-card">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span class="small-text" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Attention Required</span>
+            <span class="small-text" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center;">Attention Required<div class="tooltip-container"><span class="help-icon">?</span><span class="tooltip-text">Tasks that are blocked or under review.</span></div></span>
             <div class="pill-badge ${attentionTasks.length > 0 ? 'status-danger' : 'status-success'}">
               <span class="badge-dot"></span>${attentionTasks.length > 0 ? 'Action Needed' : 'Healthy'}
             </div>
@@ -175,7 +175,7 @@ export async function initDashboard() {
 
         <div class="grid-col-3 widget-card">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span class="small-text" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Overdue Tasks</span>
+            <span class="small-text" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center;">Overdue Tasks<div class="tooltip-container"><span class="help-icon">?</span><span class="tooltip-text">Active tasks that have passed their target due date.</span></div></span>
             <div class="pill-badge ${overdueTasks.length > 0 ? 'status-danger' : 'status-success'}">
               <span class="badge-dot"></span>${overdueTasks.length > 0 ? 'Overdue' : 'On Track'}
             </div>
@@ -186,7 +186,7 @@ export async function initDashboard() {
 
         <div class="grid-col-3 widget-card">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span class="small-text" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Pending Approvals</span>
+            <span class="small-text" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center;">Pending Approvals<div class="tooltip-container"><span class="help-icon">?</span><span class="tooltip-text">Tasks awaiting managerial authorization.</span></div></span>
             <div class="pill-badge ${pendingApprovals.length > 0 ? 'status-warning' : 'status-success'}">
               <span class="badge-dot"></span>${pendingApprovals.length > 0 ? 'Awaiting Action' : 'Clear'}
             </div>
@@ -197,7 +197,7 @@ export async function initDashboard() {
 
         <div class="grid-col-3 widget-card">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span class="small-text" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Completed (WTD)</span>
+            <span class="small-text" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center;">Completed (WTD)<div class="tooltip-container"><span class="help-icon">?</span><span class="tooltip-text">Tasks successfully closed within the last 7 days.</span></div></span>
             <div class="pill-badge status-success">
               <span class="badge-dot"></span>Completed
             </div>

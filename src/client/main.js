@@ -80,10 +80,11 @@ function initNavigation() {
       // Non-superadmin cannot see superadmin console
       if (key === 'superadmin') return;
 
-      // Employee hides employees registry and SLA reports
-      if (rank > 2) {
-        if (key === 'employees' || key === 'reports') return;
-      }
+      // Registry requires Rank <= 2, Reports uses SLA access config
+      if (key === 'employees' && rank > 2) return;
+      
+      const slaAccessLevel = AuthState.currentUser?.tenant?.slaAccessLevel ?? 3;
+      if (key === 'reports' && rank > slaAccessLevel) return;
     }
 
     const iconSvg = ICONS[route.icon] || '';

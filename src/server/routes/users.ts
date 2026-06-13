@@ -443,7 +443,7 @@ router.get('/tenant/details', authenticateSession, requireAdmin, async (req: Req
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true, subscriptionTier: true, status: true, allowCrossDeptPeerAssignment: true }
+      select: { id: true, name: true, subscriptionTier: true, status: true, allowCrossDeptPeerAssignment: true, slaAccessLevel: true }
     });
     return res.status(200).json({ tenant });
   } catch (error: any) {
@@ -457,7 +457,7 @@ router.get('/tenant/details', authenticateSession, requireAdmin, async (req: Req
  */
 router.patch('/tenant/details', authenticateSession, requireAdmin, async (req: Request, res: Response) => {
   const tenantId = req.user!.tenantId;
-  const { name, allowCrossDeptPeerAssignment } = req.body;
+  const { name, allowCrossDeptPeerAssignment, slaAccessLevel } = req.body;
   if (!name || name.trim().length === 0) {
     return res.status(400).json({ error: 'Company name is required.' });
   }
@@ -465,6 +465,12 @@ router.patch('/tenant/details', authenticateSession, requireAdmin, async (req: R
   const updateData: any = { name: name.trim() };
   if (typeof allowCrossDeptPeerAssignment === 'boolean') {
     updateData.allowCrossDeptPeerAssignment = allowCrossDeptPeerAssignment;
+  }
+  if (slaAccessLevel !== undefined) {
+    const levelInt = Number(slaAccessLevel);
+    if (!isNaN(levelInt) && levelInt >= 0) {
+      updateData.slaAccessLevel = levelInt;
+    }
   }
   try {
     const updated = await prisma.tenant.update({

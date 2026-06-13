@@ -91,7 +91,31 @@ export function renderSettingsView() {
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
                   <input type="checkbox" id="company-cross-dept-peer" style="width: 16px; height: 16px; cursor: pointer;" />
-                  <label for="company-cross-dept-peer" class="small-text" style="font-weight: 500; cursor: pointer;">Allow cross-department peer task assignment</label>
+                  <label for="company-cross-dept-peer" class="small-text" style="font-weight: 500; cursor: pointer; display: flex; align-items: center;">
+                    Allow cross-department peer task assignment
+                    <div class="tooltip-container">
+                      <span class="help-icon">?</span>
+                      <span class="tooltip-text">If enabled, employees can assign tasks to peers outside their own department.</span>
+                    </div>
+                  </label>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label for="company-sla-access" class="small-text" style="font-weight:600; display: flex; align-items: center;">
+                    SLA Analytics Access Level
+                    <div class="tooltip-container">
+                      <span class="help-icon">?</span>
+                      <span class="tooltip-text">Minimum rank level required to view the SLA Analytics page (lower numbers mean higher authority).</span>
+                    </div>
+                  </label>
+                  <select id="company-sla-access" style="padding: 8px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); background-color: var(--bg-secondary);">
+                    <option value="0">Level 0 (Root Admin Only)</option>
+                    <option value="1">Level 1 and above</option>
+                    <option value="2">Level 2 and above</option>
+                    <option value="3">Level 3 and above</option>
+                    <option value="4">Level 4 and above</option>
+                    <option value="5">Level 5 and above</option>
+                    <option value="6">Level 6 and above (Everyone)</option>
+                  </select>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 4px;">
                   <label class="small-text" style="font-weight:600;">Subscription Tier</label>
@@ -213,11 +237,13 @@ export function initSettingsListeners() {
           const compNameInput = document.getElementById('company-name');
           const compTierInput = document.getElementById('company-tier');
           const crossDeptInput = document.getElementById('company-cross-dept-peer');
+          const slaAccessInput = document.getElementById('company-sla-access');
           const logoImg = document.getElementById('company-logo-img');
           const logoFallback = document.getElementById('company-logo-fallback');
           
           if (compNameInput) compNameInput.value = data.tenant.name || '';
           if (crossDeptInput) crossDeptInput.checked = data.tenant.allowCrossDeptPeerAssignment !== false;
+          if (slaAccessInput) slaAccessInput.value = data.tenant.slaAccessLevel ?? 3;
           if (compTierInput) compTierInput.value = `Tier ${data.tenant.subscriptionTier} Startup (Active)`;
 
           if (logoImg && logoFallback) {
@@ -251,17 +277,20 @@ export function initSettingsListeners() {
       e.preventDefault();
       const compNameInput = document.getElementById('company-name');
       const crossDeptInput = document.getElementById('company-cross-dept-peer');
+      const slaAccessInput = document.getElementById('company-sla-access');
       const name = compNameInput.value.trim();
       const allowCrossDeptPeerAssignment = crossDeptInput ? crossDeptInput.checked : true;
+      const slaAccessLevel = slaAccessInput ? Number(slaAccessInput.value) : 3;
       if (!name) {
         Notifications.error('Validation Error', 'Company name is required.');
         return;
       }
       try {
-        const res = await fetchApi('PATCH', '/users/tenant/details', { name, allowCrossDeptPeerAssignment });
+        const res = await fetchApi('PATCH', '/users/tenant/details', { name, allowCrossDeptPeerAssignment, slaAccessLevel });
         // Update user session cache
         if (AuthState.currentUser) {
           AuthState.currentUser.tenantName = res.tenant.name;
+          AuthState.currentUser.tenant = res.tenant; // Update tenant details for access control checks
           localStorage.setItem('tascorr_user', JSON.stringify(AuthState.currentUser));
           
           // Trigger breadcrumbs and header update

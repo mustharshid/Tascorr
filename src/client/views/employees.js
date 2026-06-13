@@ -204,36 +204,72 @@ export function renderEmployeesView() {
             <input type="hidden" id="edit-emp-id" />
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
               <div style="display: flex; flex-direction: column; gap: 6px;">
-                <label for="edit-emp-first" class="small-text" style="font-weight: 600;">First Name</label>
+                <label for="edit-emp-first" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                  First Name
+                  <div class="tooltip-container">
+                    <span class="help-icon">?</span>
+                    <span class="tooltip-text">The employee's given first name.</span>
+                  </div>
+                </label>
                 <input type="text" id="edit-emp-first" required maxlength="50" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background: var(--bg-secondary); color: var(--text-primary);" />
               </div>
               <div style="display: flex; flex-direction: column; gap: 6px;">
-                <label for="edit-emp-last" class="small-text" style="font-weight: 600;">Last Name</label>
+                <label for="edit-emp-last" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                  Last Name
+                  <div class="tooltip-container">
+                    <span class="help-icon">?</span>
+                    <span class="tooltip-text">The employee's family name or surname.</span>
+                  </div>
+                </label>
                 <input type="text" id="edit-emp-last" required maxlength="50" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background: var(--bg-secondary); color: var(--text-primary);" />
               </div>
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="edit-emp-rank" class="small-text" style="font-weight: 600;">Rank Role (Title & Access)</label>
+              <label for="edit-emp-rank" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                Rank Role (Title & Access)
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">Determines numerical authority level and system access.</span>
+                </div>
+              </label>
               <select id="edit-emp-rank" required style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background:var(--bg-secondary); color: var(--text-primary);">
                 <!-- Dynamically populated -->
               </select>
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="edit-emp-dept" class="small-text" style="font-weight: 600;">Department</label>
+              <label for="edit-emp-dept" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                Department
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">The primary operational department this user is assigned to.</span>
+                </div>
+              </label>
               <select id="edit-emp-dept" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background:var(--bg-secondary); color: var(--text-primary);">
                 <option value="">Unassigned</option>
                 <!-- Dynamically populated -->
               </select>
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="edit-emp-status" class="small-text" style="font-weight: 600;">Status</label>
+              <label for="edit-emp-status" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                Status
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">Active users can log in; deactivated users are blocked.</span>
+                </div>
+              </label>
               <select id="edit-emp-status" required style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background:var(--bg-secondary); color: var(--text-primary);">
                 <option value="active">Active</option>
                 <option value="deactivated">Deactivated</option>
               </select>
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="edit-emp-password" class="small-text" style="font-weight: 600;">Reset Password (leave blank to keep current)</label>
+              <label for="edit-emp-password" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                Reset Password (leave blank to keep current)
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">Generate a new login key for the employee.</span>
+                </div>
+              </label>
               <input type="password" id="edit-emp-password" placeholder="New password (min 12 chars, letters, numbers, symbols)" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background: var(--bg-secondary); color: var(--text-primary);" />
             </div>
             <div style="display: flex; gap: 12px; margin-top: 8px;">

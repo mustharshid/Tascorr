@@ -32,12 +32,24 @@ export function renderSuperadminView() {
           
           <form id="onboard-tenant-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 800px;">
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label for="tenant-name" class="small-text" style="font-weight: 600;">Organization Name</label>
+              <label for="tenant-name" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                Organization Name
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">The registered name of the client company.</span>
+                </div>
+              </label>
               <input type="text" id="tenant-name" required placeholder="Acme International" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md);" />
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label for="tenant-tier" class="small-text" style="font-weight: 600;">Subscription Level Tier</label>
+              <label for="tenant-tier" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                Subscription Level Tier
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">Determines the maximum number of active users allowed.</span>
+                </div>
+              </label>
               <select id="tenant-tier" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background:var(--bg-secondary);">
                 <option value="1">Tier 1 (Startup: 10 user cap)</option>
                 <option value="2">Tier 2 (Growth: 100 user cap)</option>
@@ -46,12 +58,24 @@ export function renderSuperadminView() {
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label for="tenant-email" class="small-text" style="font-weight: 600;">Admin User Email</label>
+              <label for="tenant-email" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                Admin User Email
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">The root administrator's login email.</span>
+                </div>
+              </label>
               <input type="email" id="tenant-email" required placeholder="admin@acme.com" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md);" />
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label for="tenant-password" class="small-text" style="font-weight: 600;">Admin User Password</label>
+              <label for="tenant-password" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                Admin User Password
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">The root administrator's initial login key.</span>
+                </div>
+              </label>
               <input type="password" id="tenant-password" required placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md);" />
             </div>
 

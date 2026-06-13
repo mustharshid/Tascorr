@@ -170,25 +170,49 @@ export class TaskCreateDrawer {
           <form id="drawer-task-form" style="display: flex; flex-direction: column; gap: 16px;">
             <!-- Task Title -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="task-title" class="small-text" style="font-weight: 600; color: var(--text-primary);">Task Title</label>
+              <label for="task-title" class="small-text" style="font-weight: 600; color: var(--text-primary); display: flex; align-items: center;">
+                Task Title
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">A concise, descriptive title for this task.</span>
+                </div>
+              </label>
               <input type="text" id="task-title" required maxlength="100" placeholder="Consolidated Financial Review" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;" />
             </div>
 
             <!-- Description -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="task-desc" class="small-text" style="font-weight: 600; color: var(--text-primary);">Description</label>
+              <label for="task-desc" class="small-text" style="font-weight: 600; color: var(--text-primary); display: flex; align-items: center;">
+                Description
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">Detailed instructions or context required to complete the task.</span>
+                </div>
+              </label>
               <textarea id="task-desc" required maxlength="2000" placeholder="Provide clear contextual description parameters..." rows="4" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: vertical;"></textarea>
             </div>
 
             <!-- Due Date & Priority Grid -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
               <div style="display: flex; flex-direction: column; gap: 6px;">
-                <label for="task-due" class="small-text" style="font-weight: 600; color: var(--text-primary);">Due Date</label>
+                <label for="task-due" class="small-text" style="font-weight: 600; color: var(--text-primary); display: flex; align-items: center;">
+                  Due Date
+                  <div class="tooltip-container">
+                    <span class="help-icon">?</span>
+                    <span class="tooltip-text">The target deadline for task completion.</span>
+                  </div>
+                </label>
                 <input type="date" id="task-due" required style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;" />
               </div>
 
               <div style="display: flex; flex-direction: column; gap: 6px;">
-                <label for="task-priority" class="small-text" style="font-weight: 600; color: var(--text-primary);">Priority</label>
+                <label for="task-priority" class="small-text" style="font-weight: 600; color: var(--text-primary); display: flex; align-items: center;">
+                  Priority
+                  <div class="tooltip-container">
+                    <span class="help-icon">?</span>
+                    <span class="tooltip-text">The urgency level. High priority tasks are flagged for immediate attention.</span>
+                  </div>
+                </label>
                 <select id="task-priority" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;">
                   <option value="Low">Low Priority</option>
                   <option value="Medium" selected>Medium Priority</option>
@@ -200,7 +224,13 @@ export class TaskCreateDrawer {
 
             <!-- Department Scoping -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="task-dept" class="small-text" style="font-weight: 600; color: var(--text-primary);">Department Scoping</label>
+              <label for="task-dept" class="small-text" style="font-weight: 600; color: var(--text-primary); display: flex; align-items: center;">
+                Department Scoping
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">Restrict visibility and assignment to a specific department.</span>
+                </div>
+              </label>
               <select id="task-dept" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;">
                 <option value="">General / Tenant Scope</option>
                 ${deptOptions}
@@ -211,11 +241,23 @@ export class TaskCreateDrawer {
             <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); background-color: var(--bg-secondary);">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <input type="checkbox" id="task-recurring" style="cursor: pointer; width: 16px; height: 16px;" />
-                <label for="task-recurring" class="small-text" style="font-weight: 600; color: var(--text-primary); cursor: pointer;">Enable Task Recurrence</label>
+                <label for="task-recurring" class="small-text" style="font-weight: 600; color: var(--text-primary); cursor: pointer; display: flex; align-items: center;">
+                  Enable Task Recurrence
+                  <div class="tooltip-container">
+                    <span class="help-icon">?</span>
+                    <span class="tooltip-text">Automatically generate a new copy of this task when it is completed.</span>
+                  </div>
+                </label>
               </div>
               
               <div id="recurring-interval-wrapper" style="display: none; flex-direction: column; gap: 6px;">
-                <label for="task-interval" class="small-text" style="font-weight: 600; color: var(--text-primary);">Recurrence Interval</label>
+                <label for="task-interval" class="small-text" style="font-weight: 600; color: var(--text-primary); display: flex; align-items: center;">
+                  Recurrence Interval
+                  <div class="tooltip-container">
+                    <span class="help-icon">?</span>
+                    <span class="tooltip-text">How frequently the task should repeat (e.g., Daily, Weekly).</span>
+                  </div>
+                </label>
                 <select id="task-interval" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-primary); color: var(--text-primary); outline: none;">
                   <option value="Daily">Daily</option>
                   <option value="Weekly" selected>Weekly</option>
@@ -226,7 +268,13 @@ export class TaskCreateDrawer {
 
             <!-- Assignee & Workload Awareness Banner -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="task-assignee" class="small-text" style="font-weight: 600; color: var(--text-primary);">Assignee</label>
+              <label for="task-assignee" class="small-text" style="font-weight: 600; color: var(--text-primary); display: flex; align-items: center;">
+                Assignee
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">The team member responsible for executing this task.</span>
+                </div>
+              </label>
               <select id="task-assignee" required style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;">
                 <option value="" disabled selected>Select an assignee...</option>
                 ${assigneeOptions}
@@ -454,6 +502,7 @@ export class TaskCreateDrawer {
       if (errorAlert) {
         errorAlert.innerText = msg;
         errorAlert.style.display = 'block';
+        errorAlert.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
   }

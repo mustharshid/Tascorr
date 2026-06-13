@@ -38,12 +38,24 @@ export function renderDepartmentsView() {
           
           <form id="create-dept-form" style="display: flex; flex-direction: column; gap: 12px;">
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label for="dept-name" class="small-text" style="font-weight:600;">Department Name</label>
+              <label for="dept-name" class="small-text" style="font-weight:600; display: flex; align-items: center;">
+                Department Name
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">The official name of the operational department.</span>
+                </div>
+              </label>
               <input type="text" id="dept-name" required placeholder="Operations & Logistics" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md);" />
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label for="dept-head" class="small-text" style="font-weight:600;">Department Head</label>
+              <label for="dept-head" class="small-text" style="font-weight:600; display: flex; align-items: center;">
+                Department Head
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">The employee designated as the leader of this department.</span>
+                </div>
+              </label>
               <select id="dept-head" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background:var(--bg-secondary);">
                 <option value="">No Head Assigned</option>
                 <!-- Populated dynamically -->
@@ -78,11 +90,23 @@ export function renderDepartmentsView() {
           <form id="edit-dept-form" style="display: flex; flex-direction: column; gap: 16px;">
             <input type="hidden" id="edit-dept-id" />
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="edit-dept-name" class="small-text" style="font-weight: 600;">Department Name</label>
+              <label for="edit-dept-name" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                Department Name
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">The official name of the operational department.</span>
+                </div>
+              </label>
               <input type="text" id="edit-dept-name" required maxlength="100" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background: var(--bg-secondary); color: var(--text-primary);" />
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
-              <label for="edit-dept-head" class="small-text" style="font-weight: 600;">Department Head</label>
+              <label for="edit-dept-head" class="small-text" style="font-weight: 600; display: flex; align-items: center;">
+                Department Head
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">The employee designated as the leader of this department.</span>
+                </div>
+              </label>
               <select id="edit-dept-head" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background:var(--bg-secondary); color: var(--text-primary);">
                 <option value="">No Head Assigned</option>
                 <!-- Dynamically populated -->

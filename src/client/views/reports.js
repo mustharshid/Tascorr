@@ -23,21 +23,39 @@ export function renderReportsView() {
         <div class="dashboard-grid">
           <!-- Avg Completion Time -->
           <div class="grid-col-4 widget-card">
-            <span class="small-text" style="font-weight: 600; text-transform: uppercase; color: var(--text-secondary);">Avg Task Closure Time</span>
+            <span class="small-text" style="font-weight: 600; text-transform: uppercase; color: var(--text-secondary); display: flex; align-items: center; justify-content: center;">
+              Avg Task Closure Time
+              <div class="tooltip-container" style="margin-left: 6px;">
+                <span class="help-icon">?</span>
+                <span class="tooltip-text" style="text-transform: none;">Average time taken from task creation to final completion.</span>
+              </div>
+            </span>
             <div id="kpi-closure-time" class="page-title" style="font-size: 32px; margin: 12px 0;">--</div>
             <p class="small-text">Average duration from creation to closure state</p>
           </div>
 
           <!-- Blocker Resolve Speed -->
           <div class="grid-col-4 widget-card">
-            <span class="small-text" style="font-weight: 600; text-transform: uppercase; color: var(--text-secondary);">Avg Blocker Duration</span>
+            <span class="small-text" style="font-weight: 600; text-transform: uppercase; color: var(--text-secondary); display: flex; align-items: center; justify-content: center;">
+              Avg Blocker Duration
+              <div class="tooltip-container" style="margin-left: 6px;">
+                <span class="help-icon">?</span>
+                <span class="tooltip-text" style="text-transform: none;">Average time tasks spend in the Blocked state.</span>
+              </div>
+            </span>
             <div id="kpi-blocker-time" class="page-title" style="font-size: 32px; margin: 12px 0;">--</div>
             <p class="small-text">Average duration of suspended blockers</p>
           </div>
 
           <!-- Reassignment Frequency -->
           <div class="grid-col-4 widget-card">
-            <span class="small-text" style="font-weight: 600; text-transform: uppercase; color: var(--text-secondary);">Reassignment Ratio</span>
+            <span class="small-text" style="font-weight: 600; text-transform: uppercase; color: var(--text-secondary); display: flex; align-items: center; justify-content: center;">
+              Reassignment Ratio
+              <div class="tooltip-container" style="margin-left: 6px;">
+                <span class="help-icon">?</span>
+                <span class="tooltip-text" style="text-transform: none;">Percentage of tasks that were reassigned after initial assignment.</span>
+              </div>
+            </span>
             <div id="kpi-reassign-rate" class="page-title" style="font-size: 32px; margin: 12px 0;">--</div>
             <p class="small-text">Percentage of tasks requiring reassignment</p>
           </div>
@@ -47,7 +65,13 @@ export function renderReportsView() {
         <div class="dashboard-grid">
           <!-- Departmental SLA Completion Charts -->
           <div class="grid-col-6 widget-card" style="display: flex; flex-direction: column;">
-            <h3 class="card-title" style="margin-bottom: 16px;">SLA Met Percentage</h3>
+            <h3 class="card-title" style="margin-bottom: 16px; display: flex; align-items: center;">
+              SLA Met Percentage
+              <div class="tooltip-container">
+                <span class="help-icon">?</span>
+                <span class="tooltip-text">Service Level Agreement - Percentage of tasks completed on or before their due dates.</span>
+              </div>
+            </h3>
             <div id="sla-chart-list" style="display: flex; flex-direction: column; gap: 20px; flex: 1; justify-content: center;">
               <!-- Populated dynamically -->
             </div>
@@ -55,7 +79,13 @@ export function renderReportsView() {
 
           <!-- Priority Allocation Index -->
           <div class="grid-col-6 widget-card">
-            <h3 class="card-title" style="margin-bottom: 16px;">Task Completion by Priority</h3>
+            <h3 class="card-title" style="margin-bottom: 16px; display: flex; align-items: center;">
+              Task Completion by Priority
+              <div class="tooltip-container">
+                <span class="help-icon">?</span>
+                <span class="tooltip-text">Breakdown of tasks closed based on urgency levels.</span>
+              </div>
+            </h3>
             <div id="priority-list" style="display: flex; flex-direction: column; gap: 16px;">
               <!-- Populated dynamically -->
             </div>
