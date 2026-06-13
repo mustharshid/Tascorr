@@ -22,9 +22,12 @@ export class ApiError extends Error {
  */
 export async function fetchApi(method, path, body = null) {
   // Build absolute URL so fetch always targets /api/... at the server origin,
-  // regardless of what subdirectory the HTML page was served from.
+  // accounting for the deployment base path (e.g. /tascorr/)
+  const basePath = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL 
+    ? import.meta.env.BASE_URL.replace(/\/$/, '') 
+    : '';
   const apiPath = path.startsWith('/api') ? path : `/api${path}`;
-  const url = `${window.location.origin}${apiPath}`;
+  const url = `${window.location.origin}${basePath}${apiPath}`;
   
   const headers = {
     'Accept': 'application/json',

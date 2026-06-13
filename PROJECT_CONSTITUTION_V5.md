@@ -1198,6 +1198,14 @@ DEPLOY.md must be written in plain language accessible to a developer with basic
 
 * Security Hardening: Post-installation checklist — confirm .env is inaccessible from browser, confirm install.php is deleted, confirm credentials.txt is stored securely or deleted.
 
+## **9.4 Deployment Constraints  ● NEW**
+
+The following deployment constraints are authoritative and must be considered by all code, especially configuration files (e.g. Vite configuration, base paths, backend settings, etc.):
+
+* **Deployment URL**: The application will be deployed in the location: `https://soft.thinksafe.mv/tascorr/`
+* **Backend Stack**: The server is configured with Node.js. (Despite references to PHP in historical documentation, the active server environment uses Node.js).
+* **Access Limitations**: The server does not provide SSH access. All deployment scripts and installation processes must account for this.
+
 ### **9.3.5 Security Requirements for the Installer**
 
 The following security constraints apply to the installation process and must not be relaxed:
