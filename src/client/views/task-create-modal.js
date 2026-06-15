@@ -80,79 +80,84 @@ export class TaskCreateDrawer {
 
     if (isMobile) {
       this.drawerEl.innerHTML = `
-        <div style="display:flex; flex-direction:column; height:100%; width: 100%; background: #fff; padding: 24px; padding-bottom: 0; position: relative;">
+        <div style="display:flex; flex-direction:column; height:100%; width: 100%; background: inherit; padding: 20px; padding-bottom: 0; position: relative;">
           <!-- Drag Handle -->
-          <div style="width: 48px; height: 5px; background: #E5E7EB; border-radius: 3px; margin: 0 auto 20px auto; flex-shrink: 0;"></div>
+          <div style="width: 48px; height: 5px; background: var(--border-neutral); border-radius: 3px; margin: 0 auto 16px auto; flex-shrink: 0; opacity: 0.5;"></div>
           
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-shrink: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;">
             <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary);">New Task</h2>
-            <button id="close-drawer-btn" style="background: var(--sidebar-bg); border: none; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); flex-shrink: 0; box-sizing: border-box;">
+            <button id="close-drawer-btn" style="background: var(--sidebar-bg); border: none; width: 32px; height: 32px; min-width: 32px; min-height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); flex-shrink: 0;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
 
           <div id="drawer-error-alert" style="display: none; padding: 12px; background-color: rgba(220, 38, 38, 0.1); color: var(--status-danger); font-size: 13px; font-weight: 500; border-radius: var(--radius-md); margin-bottom: 16px;"></div>
 
-          <form id="drawer-task-form" style="display: flex; flex-direction: column; gap: 24px; flex: 1; overflow-y: auto; padding-bottom: 100px;">
+          <form id="drawer-task-form" style="display: flex; flex-direction: column; gap: 16px; flex: 1; overflow-y: auto; padding-bottom: 100px;">
             <!-- Task Title -->
-            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
               <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Task Title</label>
-              <input type="text" id="task-title" required maxlength="100" placeholder="What needs to be done?" style="padding: 16px; border: none; border-radius: 16px; font-size: 16px; background-color: var(--sidebar-bg); color: var(--text-primary); outline: none; font-weight: 500;" />
+              <input type="text" id="task-title" required maxlength="100" placeholder="What needs to be done?" style="padding: 12px 16px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-size: 15px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; font-weight: 500; box-sizing: border-box;" />
             </div>
 
             <!-- Description -->
-            <textarea id="task-desc" required maxlength="2000" placeholder="Description (Optional)" style="padding: 16px; border: none; border-radius: 16px; font-size: 14px; background-color: var(--sidebar-bg); color: var(--text-primary); outline: none; resize: none; height: 80px;"></textarea>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Description</label>
+              <textarea id="task-desc" required maxlength="2000" placeholder="Add detailed notes..." style="padding: 12px 16px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-size: 14px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: none; height: 70px; box-sizing: border-box;"></textarea>
+            </div>
 
-            <!-- Subtasks Checklist -->
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Subtasks Checklist</label>
-              <div id="mobile-subtasks-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
-              <div style="display: flex; gap: 8px;">
-                <input type="text" id="mobile-new-subtask" placeholder="Add a subtask..." style="flex: 1; padding: 12px; border: none; border-radius: 12px; font-size: 14px; background-color: var(--sidebar-bg); color: var(--text-primary); outline: none;" />
-                <button type="button" id="mobile-add-subtask-btn" style="background: var(--bg-secondary); border: none; border-radius: 12px; padding: 0 16px; font-weight: 600; color: var(--text-primary); cursor: pointer;">Add</button>
+            <!-- Due Date & Priority Grid -->
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; flex-shrink: 0;">
+              <!-- Due Date -->
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Due Date</label>
+                <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                  <div class="mobile-due-opt active" data-offset="0" style="padding: 6px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #E0E7FF; color: #4338CA; cursor: pointer; flex: 1; text-align: center;">Today</div>
+                  <div class="mobile-due-opt" data-offset="1" style="padding: 6px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer; flex: 1; text-align: center;">Tmrw</div>
+                </div>
+                <input type="date" id="task-due" value="${new Date().toISOString().split('T')[0]}" required style="padding: 10px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; width: 100%; box-sizing: border-box;" />
+              </div>
+
+              <!-- Priority -->
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Priority</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;">
+                  <div class="mobile-priority-opt" data-val="Low" style="padding: 6px 4px; text-align: center; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">Low</div>
+                  <div class="mobile-priority-opt active" data-val="Medium" style="padding: 6px 4px; text-align: center; border-radius: 10px; font-size: 11px; font-weight: 600; background: #E0E7FF; color: #4338CA; cursor: pointer;">Med</div>
+                  <div class="mobile-priority-opt" data-val="High" style="padding: 6px 4px; text-align: center; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">High</div>
+                  <div class="mobile-priority-opt" data-val="Critical" style="padding: 6px 4px; text-align: center; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">Crit</div>
+                </div>
+                <input type="hidden" id="task-priority" value="Medium" />
               </div>
             </div>
 
             <!-- Assign To -->
-            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
               <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Assign To</label>
-              <div style="display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none;">
+              <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; -ms-overflow-style: none;">
                 ${filteredUsers.map(u => `
-                  <div class="mobile-assignee-opt" data-id="${u.id}" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0;">
-                    <div style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid transparent; padding: 2px; transition: all 0.2s;">
+                  <div class="mobile-assignee-opt" data-id="${u.id}" style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex-shrink: 0; padding: 6px 12px; background: var(--bg-secondary); border: 1px solid var(--border-neutral); border-radius: 20px; transition: all 0.2s;">
+                    <div style="width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid transparent; transition: all 0.2s; flex-shrink: 0;">
                       <img src="/avatars/user-${u.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;" />
-                      <div style="width: 100%; height: 100%; border-radius: 50%; background: var(--sidebar-bg); color: var(--text-primary); display: none; align-items: center; justify-content: center; font-size: 16px; font-weight: 700;">
+                      <div style="width: 100%; height: 100%; border-radius: 50%; background: var(--sidebar-bg); color: var(--text-primary); display: none; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">
                         ${escapeHTML(u.firstName[0])}
                       </div>
                     </div>
-                    <span style="font-size: 11px; font-weight: 500; color: var(--text-secondary);">${escapeHTML(u.firstName)}</span>
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-primary);">${escapeHTML(u.firstName)}</span>
                   </div>
                 `).join('')}
               </div>
               <input type="hidden" id="task-assignee" required />
             </div>
 
-            <!-- Priority -->
+            <!-- Subtasks Checklist -->
             <div style="display: flex; flex-direction: column; gap: 8px;">
-              <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Priority</label>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <div class="mobile-priority-opt active" data-val="Medium" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #E0E7FF; color: #4338CA; cursor: pointer;">Medium</div>
-                <div class="mobile-priority-opt" data-val="Low" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">Low</div>
-                <div class="mobile-priority-opt" data-val="High" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">High</div>
-                <div class="mobile-priority-opt" data-val="Critical" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">Critical</div>
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Subtasks Checklist</label>
+              <div id="mobile-subtasks-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto;"></div>
+              <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <input type="text" id="mobile-new-subtask" placeholder="Add a subtask..." style="flex: 1; padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; box-sizing: border-box;" />
+                <button type="button" id="mobile-add-subtask-btn" style="background: var(--bg-secondary); border: 1px solid var(--border-neutral); border-radius: var(--radius-md); padding: 0 16px; font-weight: 600; color: var(--text-primary); cursor: pointer; font-size: 13px;">Add</button>
               </div>
-              <input type="hidden" id="task-priority" value="Medium" />
-            </div>
-
-            <!-- Due Date -->
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Due</label>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <div class="mobile-due-opt active" data-offset="0" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #E0E7FF; color: #4338CA; cursor: pointer;">Today</div>
-                <div class="mobile-due-opt" data-offset="1" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">Tomorrow</div>
-                <div class="mobile-due-opt" data-offset="7" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">Next week</div>
-              </div>
-              <input type="date" id="task-due" value="${new Date().toISOString().split('T')[0]}" required style="margin-top: 8px; padding: 12px; border: none; border-radius: 12px; font-size: 14px; background-color: var(--sidebar-bg); color: var(--text-primary); outline: none; width: 100%; box-sizing: border-box;" />
             </div>
 
             <input type="hidden" id="task-dept" value="" />
@@ -160,8 +165,8 @@ export class TaskCreateDrawer {
           </form>
 
           <!-- Fixed Bottom Button -->
-          <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 16px 24px; background: linear-gradient(to top, rgba(255,255,255,1) 80%, rgba(255,255,255,0)); border-radius: 0 0 32px 32px;">
-            <button id="submit-task-btn" style="width: 100%; background: #3B82F6; color: white; padding: 16px; border: none; border-radius: 100px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(59,130,246,0.3);">
+          <div class="mobile-drawer-bottom" style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 16px 20px; border-radius: 0 0 32px 32px; box-sizing: border-box;">
+            <button id="submit-task-btn" style="width: 100%; background: #3B82F6; color: white; padding: 14px; border: none; border-radius: 100px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(59,130,246,0.3);">
               Create & Assign
             </button>
           </div>

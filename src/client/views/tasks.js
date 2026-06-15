@@ -232,11 +232,26 @@ function renderTaskList() {
     let matchesCompletedFilter = true;
     if (t.status === 'Completed') {
       if (status !== 'Completed') {
-        matchesCompletedFilter = showCompletedTasks;
+        if (showCompletedTasks) {
+          matchesCompletedFilter = true;
+        } else {
+          const completedAt = t.updatedAt ? new Date(t.updatedAt) : new Date(t.createdAt);
+          const hoursSinceCompletion = (Date.now() - completedAt.getTime()) / (1000 * 60 * 60);
+          matchesCompletedFilter = hoursSinceCompletion <= 24;
+        }
       }
     }
 
     return matchesTab && matchesSearch && matchesStatus && matchesPriority && matchesCompletedFilter;
+  });
+
+  // Sort completed tasks to the bottom, others descending by creation date
+  filtered.sort((a, b) => {
+    const aCompleted = a.status === 'Completed';
+    const bCompleted = b.status === 'Completed';
+    if (aCompleted && !bCompleted) return 1;
+    if (!aCompleted && bCompleted) return -1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
   if (filtered.length === 0) {
@@ -289,8 +304,10 @@ function renderTaskList() {
     const subtasksDone = t.subtasks?.filter(s => s.status === 'Completed').length || 0;
     const subtasksPct = subtasksTotal > 0 ? Math.round((subtasksDone / subtasksTotal) * 100) : (t.status === 'Completed' ? 100 : 0);
 
+    const opacityStyle = t.status === 'Completed' ? 'opacity: 0.6;' : '';
+
     return `
-      <div class="task-list-item" data-id="${t.id}" style="background: var(--bg-primary); ${borderStyle} border-radius: 20px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); margin-bottom: 16px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; ${isSelected ? 'transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37,99,235,0.15);' : ''}">
+      <div class="task-list-item" data-id="${t.id}" style="background: var(--bg-primary); ${borderStyle} border-radius: 20px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); margin-bottom: 16px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; ${isSelected ? 'transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37,99,235,0.15);' : ''} ${opacityStyle}">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <div style="display: flex; gap: 8px; align-items: center;">
             <span style="color: ${priorityColor}; background: ${priorityColor}15; padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: 700;">${t.priority}</span>
@@ -569,7 +586,7 @@ async function loadTaskDetails(id) {
       </div>
 
       <!-- ================== MOBILE BOTTOM SHEET ================== -->
-      <div class="mobile-only" style="display:flex; flex-direction:column; height:100%; width: 100%; background: #fff; position: relative; border-radius: 32px 32px 0 0; overflow: hidden;">
+      <div class="mobile-only" style="display:flex; flex-direction:column; height:100%; width: 100%; background: inherit; position: relative; border-radius: 32px 32px 0 0; overflow: hidden;">
         
         <!-- Fixed Header Area -->
         <div style="padding: 24px 24px 16px 24px; flex-shrink: 0; border-bottom: 1px solid var(--border-neutral);">
@@ -604,7 +621,7 @@ async function loadTaskDetails(id) {
           </div>
 
           <!-- Assigned To -->
-          <div style="background: #F9FAFB; border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; border: 1px solid var(--border-neutral);">
+          <div style="background: var(--bg-secondary); border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; border: 1px solid var(--border-neutral);">
             ${assigneeId ? `<img src="/avatars/user-${assigneeId}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />` : ''}
             <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--sidebar-bg); color: var(--text-primary); display: ${assigneeId ? 'none' : 'flex'}; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">${assigneeInitial}</div>
             <div style="display: flex; flex-direction: column;">

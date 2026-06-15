@@ -870,6 +870,16 @@ h3,
     border-radius: 20px !important;
   }
 
+  [data-theme="dark"] .widget-card {
+    background: #181820 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  [data-theme="midnight"] .widget-card {
+    background: #0d0d14 !important;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  }
+
   .pill-badge {
     background-color: #F3F4F6 !important;
     border: none !important;
@@ -1287,6 +1297,16 @@ input.input-success {
     padding: 0 !important;
   }
 
+  [data-theme="dark"] #tasks-workspace-container #task-details-container {
+    background: #181820 !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  [data-theme="midnight"] #tasks-workspace-container #task-details-container {
+    background: #0d0d14 !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6) !important;
+  }
+
   /* Overlay background for the master pane when task is selected */
   #tasks-workspace-container.task-selected #tasks-master-pane {
     opacity: 0.3;
@@ -1492,8 +1512,30 @@ input.input-success {
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
   }
 
+  [data-theme="dark"] #task-create-drawer {
+    background: #181820 !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  [data-theme="midnight"] #task-create-drawer {
+    background: #0d0d14 !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
+  }
+
   #task-create-drawer.open {
     transform: translateY(0);
+  }
+
+  .mobile-drawer-bottom {
+    background: linear-gradient(to top, #ffffff 80%, rgba(255,255,255,0)) !important;
+  }
+
+  [data-theme="dark"] .mobile-drawer-bottom {
+    background: linear-gradient(to top, #181820 80%, rgba(24,24,32,0)) !important;
+  }
+
+  [data-theme="midnight"] .mobile-drawer-bottom {
+    background: linear-gradient(to top, #0d0d14 80%, rgba(13,13,20,0)) !important;
   }
 }
 
