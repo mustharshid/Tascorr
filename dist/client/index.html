@@ -10,9 +10,9 @@
   <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
   <link rel="icon" href="favicon-16.png" type="image/png" sizes="16x16">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="manifest" href="/tascorr/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2563EB">
-  <script type="module" crossorigin src="/tascorr/assets/main-C4IIxko2.js"></script>
+  <script type="module" crossorigin src="/tascorr/assets/main-CPUeLG5V.js"></script>
   <link rel="stylesheet" crossorigin href="/tascorr/assets/main-DVeNkpk-.css">
 </head>
 <body>
@@ -119,7 +119,8 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         const swPath = (document.querySelector('base')?.href || '/').replace(/\/$/, '') + '/service-worker.js';
-        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+        const swScope = (document.querySelector('base')?.href || '/');
+        navigator.serviceWorker.register(swPath, { scope: swScope })
           .then(reg => console.log('[SW] Registered, scope:', reg.scope))
           .catch(err => console.warn('[SW] Registration failed:', err));
       });
