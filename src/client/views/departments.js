@@ -21,7 +21,7 @@ export function renderDepartmentsView() {
           <p class="body-text">Visualize structural department hierarchies, heads, and staff mappings.</p>
         </div>
         ${isAdmin ? `
-          <button id="add-dept-btn" class="menu-item active" style="padding: 10px 18px; border-radius: var(--radius-md); border: none; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+          <button id="add-dept-btn" class="btn btn-primary" style="padding: 10px 18px; border-radius: var(--radius-md); border: none; font-weight: 600; display: flex; align-items: center; gap: 8px;">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 16px; height: 16px;">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
@@ -63,7 +63,7 @@ export function renderDepartmentsView() {
             </div>
 
             <div style="display: flex; gap: 8px; margin-top: 8px;">
-              <button type="submit" class="menu-item active" style="padding: 8px 16px; border:none; font-weight:600;">Save Department</button>
+              <button type="submit" class="btn btn-primary" style="padding: 8px 16px; border:none; font-weight:600;">Save Department</button>
               <button id="cancel-dept-btn" type="button" style="padding: 8px 16px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); background:none; cursor:pointer;">Cancel</button>
             </div>
           </form>
@@ -113,7 +113,7 @@ export function renderDepartmentsView() {
               </select>
             </div>
             <div style="display: flex; gap: 12px; margin-top: 8px;">
-              <button type="submit" class="menu-item active" style="flex:1; justify-content:center; padding: 10px; border:none; font-weight:600;">Save Changes</button>
+              <button type="submit" class="btn btn-primary" style="flex:1; justify-content:center; padding: 10px; border:none; font-weight:600;">Save Changes</button>
               <button id="close-edit-dept-modal-btn" type="button" style="flex:1; padding: 10px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); cursor: pointer;">Cancel</button>
             </div>
           </form>

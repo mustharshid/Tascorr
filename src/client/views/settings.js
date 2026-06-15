@@ -53,7 +53,7 @@ export function renderSettingsView() {
                   <input type="text" id="profile-last" required style="padding: 8px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md);" />
                 </div>
               </div>
-              <button type="submit" class="menu-item active" style="padding: 10px 16px; border:none; font-weight:600; width: fit-content;">Save Profile Details</button>
+              <button type="submit" class="btn btn-primary" style="padding: 10px 16px; border:none; font-weight:600; width: fit-content;">Save Profile Details</button>
             </form>
           </div>
 
@@ -121,7 +121,7 @@ export function renderSettingsView() {
                   <label class="small-text" style="font-weight:600;">Subscription Tier</label>
                   <input type="text" id="company-tier" disabled style="padding: 8px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); background-color: var(--bg-tertiary);" />
                 </div>
-                <button type="submit" class="menu-item active" style="padding: 10px 16px; border:none; font-weight:600; width: fit-content;">Save Company Details</button>
+                <button type="submit" class="btn btn-primary" style="padding: 10px 16px; border:none; font-weight:600; width: fit-content;">Save Company Details</button>
               </form>
 
               <hr style="border: 0; border-top: 1px solid var(--border-neutral); margin: 8px 0;" />
@@ -147,7 +147,7 @@ export function renderSettingsView() {
                   <input type="text" id="top-rank-title" required placeholder="e.g. CEO, Chairman, President" style="padding: 8px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); background-color: var(--bg-secondary); color: var(--text-primary);" />
                   <p class="small-text" style="color: var(--text-secondary); margin-top: 4px;">This title appears at the root of the organization chart. This position can assign tasks to anyone in the company.</p>
                 </div>
-                <button type="submit" class="menu-item active" style="padding: 10px 16px; border:none; font-weight:600; width: fit-content;">Save Hierarchy Setup</button>
+                <button type="submit" class="btn btn-primary" style="padding: 10px 16px; border:none; font-weight:600; width: fit-content;">Save Hierarchy Setup</button>
               </form>
             </div>
           ` : ''}

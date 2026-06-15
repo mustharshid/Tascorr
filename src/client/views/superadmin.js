@@ -80,7 +80,7 @@ export function renderSuperadminView() {
             </div>
 
             <div style="grid-column: span 2; margin-top: 8px;">
-              <button type="submit" class="menu-item active" style="padding: 10px 20px; border:none; font-weight:600; width:fit-content;">Onboard Organization</button>
+              <button type="submit" class="btn btn-primary" style="padding: 10px 20px; border:none; font-weight:600; width:fit-content;">Onboard Organization</button>
             </div>
           </form>
         </div>
