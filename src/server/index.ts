@@ -23,6 +23,14 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5005;
 
+// Strip subfolder prefix if present (for reverse proxy/Passenger compatibility)
+app.use((req, res, next) => {
+  if (req.url.startsWith('/tascorr')) {
+    req.url = req.url.substring('/tascorr'.length);
+  }
+  next();
+});
+
 // Verify JWT_SECRET security status
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret || jwtSecret === 'replace-with-a-very-secure-random-256-bit-key-for-production') {
