@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Tascorr - Multi-tenant task delegation and workforce accountability platform. Assign it. Track it. Own it.">
+  <title>Tascorr - Assign it. Track it. Own it.</title>
+  <!-- Favicons -->
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="favicon-16.png" type="image/png" sizes="16x16">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="/tascorr/manifest.json">
+  <meta name="theme-color" content="#2563EB">
+  <script type="module" crossorigin src="/tascorr/assets/main-C4IIxko2.js"></script>
+  <link rel="stylesheet" crossorigin href="/tascorr/assets/main-DVeNkpk-.css">
+</head>
+<body>
+  <!-- Offline status banner — shown/hidden by service-worker-reg.js -->
+  <div id="offline-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: #1E293B; color: #fff; font-size: 13px; font-weight: 500; padding: 10px 20px; text-align: center; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); transition: transform 0.3s ease;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M8.111 8.111A7.5 7.5 0 0019.5 12M4.5 12a7.5 7.5 0 0111.315-4.899M9 9a3 3 0 014.243 4.243M12 12v.01" /></svg>
+    <span id="offline-banner-text">You're offline — showing cached data</span>
+  </div>
+  <div id="app-layout">
+    <!-- Sidebar - Desktop navigation (hidden on mobile) -->
+    <aside class="app-sidebar" id="sidebar">
+      <div class="sidebar-slot sidebar-top">
+        <a href="#landing" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; width: 100%; height: 100%; cursor: pointer;">
+          <img src="/tascorr/tascorrLogo.png" alt="Tascorr Logo" class="sidebar-logo" id="brand-logo" onerror="this.style.display='none'">
+          <span class="sidebar-brand">Tascorr</span>
+        </a>
+      </div>
+      
+      <!-- User profile block in sidebar -->
+      <div id="sidebar-user-card" style="display: none; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border-neutral); margin-bottom: 8px; cursor: pointer;" title="View Profile">
+        <div style="position: relative; width: 40px; height: 40px; flex-shrink: 0;">
+          <img id="sidebar-user-avatar-img" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;" />
+          <div id="sidebar-user-avatar" style="width: 100%; height: 100%; border-radius: 50%; background-color: var(--accent-navy-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; text-transform: uppercase; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);">
+            --
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; overflow: hidden; gap: 2px;">
+          <span id="sidebar-user-name" style="font-weight: 600; color: var(--text-primary); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">--</span>
+          <span id="sidebar-user-role" style="font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">--</span>
+        </div>
+      </div>
+      
+      <nav class="sidebar-slot sidebar-middle" id="desktop-nav">
+        <!-- Rendered dynamically by navigation foundations in main.js -->
+      </nav>
+      
+      <div class="sidebar-slot sidebar-bottom" id="desktop-bottom-nav">
+        <!-- Rendered dynamically by navigation foundations in main.js -->
+      </div>
+    </aside>
+
+    <!-- Main Workspace Container -->
+    <div class="app-container">
+      <!-- Header Bar -->
+      <header class="app-header">
+        <div class="header-left desktop-only">
+          <button class="sidebar-toggle-btn" id="sidebar-toggle" aria-label="Toggle Sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+          <div class="header-breadcrumbs" id="breadcrumbs">
+            <span class="body-text" style="font-weight: 500;">Workspace</span>
+          </div>
+        </div>
+        
+        <div class="header-right desktop-only">
+          <button class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle Theme">
+            <!-- Light/Dark icon (default moon for light mode) -->
+            <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 18px; height: 18px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+            </svg>
+          </button>
+          <div id="user-identity-badge" style="display: flex; align-items: center; gap: 8px;">
+            <span id="pending-sync-badge" style="display: none; align-items: center; gap: 5px; background: #2563EB; color: #fff; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+            </span>
+            <div class="pill-badge status-info" style="font-weight: 500; padding: 4px 8px; border-radius: var(--radius-md);">
+              <span class="badge-dot"></span>
+              <span id="header-user-role">Superadmin</span>
+            </div>
+          </div>
+        </div>
+        <div class="mobile-only mobile-header-content" style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding-top: 10px;">
+          <div style="display:flex; flex-direction:column; gap: 2px;">
+            <span class="small-text" id="mobile-greeting" style="font-size: 14px; color: var(--text-secondary); font-weight: 500;">Good morning,</span>
+            <strong class="page-title" id="mobile-user-name" style="font-size: 28px; line-height: 1.2; font-weight: 700; color: var(--text-primary);">User</strong>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <button class="theme-toggle-btn" id="mobile-theme-toggle" aria-label="Toggle Theme" style="background: none; border: none; cursor: pointer; color: var(--text-primary); padding: 4px;">
+              <svg id="mobile-theme-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 22px; height: 22px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+              </svg>
+            </button>
+            <div id="mobile-header-avatar" style="cursor: pointer;" title="View Profile"></div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Dynamic View Area -->
+      <main class="app-content" id="view-root">
+        <!-- Rendered view injected here -->
+      </main>
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar (hidden on desktop) -->
+    <nav class="mobile-nav-bar" id="mobile-nav">
+      <!-- Rendered dynamically by navigation foundations in main.js -->
+    </nav>
+  </div>
+
+  <script>
+    // Service Worker registration (Phase 1 & 2)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        const swPath = (document.querySelector('base')?.href || '/').replace(/\/$/, '') + '/service-worker.js';
+        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+          .then(reg => console.log('[SW] Registered, scope:', reg.scope))
+          .catch(err => console.warn('[SW] Registration failed:', err));
+      });
+    }
+
+    // Offline / Online banner
+    const banner = document.getElementById('offline-banner');
+    const bannerText = document.getElementById('offline-banner-text');
+
+    function showBanner(msg, color) {
+      banner.style.display = 'flex';
+      banner.style.background = color;
+      bannerText.textContent = msg;
+      // Push app content down by banner height
+      document.getElementById('app-layout').style.marginTop = banner.offsetHeight + 'px';
+    }
+
+    function hideBanner() {
+      banner.style.display = 'none';
+      document.getElementById('app-layout').style.marginTop = '0';
+    }
+
+    window.addEventListener('offline', () => {
+      showBanner("You're offline — showing cached data", '#1E293B');
+    });
+
+    window.addEventListener('online', () => {
+      showBanner('Back online! Data is syncing...', '#15803D');
+      setTimeout(hideBanner, 3000);
+    });
+
+    // Show banner immediately if already offline on page load
+    if (!navigator.onLine) {
+      showBanner("You're offline — showing cached data", '#1E293B');
+    }
+  </script>
+</body>
+</html>

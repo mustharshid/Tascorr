@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Minimalist "T" + Checkmark Logo -->
+  <defs>
+    <linearGradient id="tascorrGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Left Checkmark curve/T-bar left -->
+  <path d="M 15 45 L 40 45 C 45 45 45 50 45 50 L 45 80 C 45 85 55 85 55 80 L 55 30 C 55 25 60 25 65 25 L 85 25" 
+        fill="none" 
+        stroke="url(#tascorrGradient)" 
+        stroke-width="14" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+        
+  <!-- Floating accent line -->
+  <path d="M 25 70 L 40 85 L 75 40" 
+        fill="none" 
+        stroke="#1E3A8A" 
+        stroke-width="12" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+</svg>

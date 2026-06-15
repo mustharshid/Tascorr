@@ -1,0 +1,3 @@
+File: tassCorr_logo.png, Size: 1024x1024, BBox: left=237, top=253, right=828, bottom=815
+Gaps found: []
+Saved clean_tassCorr_logo.png
