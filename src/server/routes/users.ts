@@ -282,6 +282,7 @@ router.get('/:id', authenticateSession, async (req: Request, res: Response) => {
       include: {
         rank: true,
         department: true,
+        tenant: true,
       },
     });
 
@@ -312,6 +313,8 @@ router.get('/:id', authenticateSession, async (req: Request, res: Response) => {
         department: user.department?.name || null,
         status: user.status,
         createdAt: user.createdAt,
+        tenantName: user.tenant?.name || null,
+        tenantLogoUrl: user.tenant?.logoUrl || null,
       },
     });
   } catch (error: any) {
@@ -443,7 +446,7 @@ router.get('/tenant/details', authenticateSession, requireAdmin, async (req: Req
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true, subscriptionTier: true, status: true, allowCrossDeptPeerAssignment: true, slaAccessLevel: true }
+      select: { id: true, name: true, logoUrl: true, subscriptionTier: true, status: true, allowCrossDeptPeerAssignment: true, slaAccessLevel: true }
     });
     return res.status(200).json({ tenant });
   } catch (error: any) {

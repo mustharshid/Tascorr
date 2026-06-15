@@ -36,6 +36,18 @@ export function renderProfileView() {
           </div>
         </div>
 
+        <!-- Organization details -->
+        <div style="padding-left: 24px; border-left: 1px solid var(--border-neutral); display: flex; align-items: center; gap: 12px; min-width: 200px;">
+          <div style="width: 48px; height: 48px; flex-shrink: 0; background-color: var(--bg-tertiary); border: 1px solid var(--border-neutral); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; position: relative;">
+            <img id="profile-company-logo-img" style="width: 100%; height: 100%; object-fit: contain; border-radius: var(--radius-md); display: none;" />
+            <span id="profile-company-logo-fallback" style="font-weight: 700; color: var(--text-secondary); font-size: 18px;">?</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="small-text" style="color: var(--text-secondary); font-weight: 500;">Organization</span>
+            <strong id="profile-company-name" style="color: var(--text-primary); font-size: 14px;">--</strong>
+          </div>
+        </div>
+
         <!-- Contact details -->
         <div style="padding-left: 24px; border-left: 1px solid var(--border-neutral); display: flex; flex-direction: column; gap: 6px; min-width: 220px;">
           <span class="small-text">Email Address: <strong id="profile-email-label" style="color: var(--text-primary);">--</strong></span>
@@ -128,6 +140,33 @@ export async function initProfileListeners() {
       avatarFallback.style.display = 'flex';
       avatarFallback.innerText = profileUser.firstName[0];
     };
+
+    const compLogoImg = document.getElementById('profile-company-logo-img');
+    const compLogoFallback = document.getElementById('profile-company-logo-fallback');
+    const compNameEl = document.getElementById('profile-company-name');
+    
+    if (compNameEl) {
+      compNameEl.innerText = profileUser.tenantName || 'Tascorr Workspace';
+    }
+    
+    if (compLogoImg && compLogoFallback) {
+      if (profileUser.tenantLogoUrl) {
+        compLogoImg.src = `${profileUser.tenantLogoUrl}?t=${Date.now()}`;
+        compLogoImg.onload = () => {
+          compLogoImg.style.display = 'block';
+          compLogoFallback.style.display = 'none';
+        };
+        compLogoImg.onerror = () => {
+          compLogoImg.style.display = 'none';
+          compLogoFallback.style.display = 'flex';
+          compLogoFallback.innerText = profileUser.tenantName?.[0] || '?';
+        };
+      } else {
+        compLogoImg.style.display = 'none';
+        compLogoFallback.style.display = 'flex';
+        compLogoFallback.innerText = profileUser.tenantName?.[0] || '?';
+      }
+    }
 
     document.getElementById('profile-rank').innerText = `${profileUser.rank} (Hierarchy level ${profileUser.rankLevel})`;
     document.getElementById('profile-dept-badge').innerText = profileUser.department || 'General / Corporate';

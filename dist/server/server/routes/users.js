@@ -247,6 +247,7 @@ router.get('/:id', auth_middleware_js_1.authenticateSession, async (req, res) =>
             include: {
                 rank: true,
                 department: true,
+                tenant: true,
             },
         });
         if (!user || user.tenantId !== tenantId || user.deletedAt !== null) {
@@ -272,6 +273,8 @@ router.get('/:id', auth_middleware_js_1.authenticateSession, async (req, res) =>
                 department: user.department?.name || null,
                 status: user.status,
                 createdAt: user.createdAt,
+                tenantName: user.tenant?.name || null,
+                tenantLogoUrl: user.tenant?.logoUrl || null,
             },
         });
     }
@@ -391,7 +394,7 @@ router.get('/tenant/details', auth_middleware_js_1.authenticateSession, auth_mid
     try {
         const tenant = await db_js_1.default.tenant.findUnique({
             where: { id: tenantId },
-            select: { id: true, name: true, subscriptionTier: true, status: true, allowCrossDeptPeerAssignment: true, slaAccessLevel: true }
+            select: { id: true, name: true, logoUrl: true, subscriptionTier: true, status: true, allowCrossDeptPeerAssignment: true, slaAccessLevel: true }
         });
         return res.status(200).json({ tenant });
     }

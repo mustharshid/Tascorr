@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticateSession, requireAdmin } from '../middleware/auth.middleware.js';
 import fs from 'fs';
 import path from 'path';
+import prisma from '../services/db.js';
 
 const router = Router();
 const AVATARS_DIR = path.resolve(process.cwd(), 'public', 'avatars');
@@ -85,9 +86,15 @@ router.post('/tenant-logo', authenticateSession, requireAdmin, async (req: Reque
 
     fs.writeFileSync(filepath, buffer);
 
+    const logoUrl = `/avatars/${filename}`;
+    await prisma.tenant.update({
+      where: { id: tenantId },
+      data: { logoUrl }
+    });
+
     return res.status(200).json({ 
       message: 'Company logo uploaded successfully',
-      logoUrl: `/avatars/${filename}?t=${Date.now()}` 
+      logoUrl: `${logoUrl}?t=${Date.now()}` 
     });
 
   } catch (error: any) {

@@ -168,6 +168,7 @@ router.post('/login', async (req, res) => {
                 rankTitle: user.rank.title,
                 departmentId: user.departmentId,
                 tenantName: user.tenant?.name || null,
+                tenantLogoUrl: user.tenant?.logoUrl || null,
             },
         });
     }
@@ -211,6 +212,7 @@ router.get('/session', auth_middleware_js_1.authenticateSession, async (req, res
                 departmentId: user.departmentId,
                 departmentName: user.department?.name || null,
                 tenantName: user.tenant?.name || null,
+                tenantLogoUrl: user.tenant?.logoUrl || null,
             },
         });
     }

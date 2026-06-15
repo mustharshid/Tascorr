@@ -15,6 +15,7 @@ generator client {
 model Tenant {
   id                      Int                       @id @default(autoincrement())
   name                    String
+  logoUrl                 String?
   subscriptionTier        Int                       @default(1) // Tier 1, 2, 3
   status                  String                    @default("active") // active, suspended
   allowCrossDeptPeerAssignment Boolean              @default(true) // If true, same rank can assign across depts. If false, only same rank within same dept.

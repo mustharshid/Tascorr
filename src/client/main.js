@@ -373,6 +373,28 @@ function updateUserHeaderBadge() {
     }
   }
 
+  // Update brand logo and text in sidebar
+  const brandLogo = document.getElementById('brand-logo');
+  const sidebarBrand = document.querySelector('.sidebar-brand');
+  if (AuthState.isAuthenticated && AuthState.currentUser) {
+    if (brandLogo) {
+      const tenantLogoUrl = AuthState.currentUser.tenantLogoUrl;
+      brandLogo.src = tenantLogoUrl ? `${tenantLogoUrl}?t=${Date.now()}` : '/tascorrLogo.png';
+      brandLogo.style.display = 'block';
+    }
+    if (sidebarBrand) {
+      sidebarBrand.innerText = AuthState.currentUser.tenantName || 'Tascorr';
+    }
+  } else {
+    if (brandLogo) {
+      brandLogo.src = '/tascorrLogo.png';
+      brandLogo.style.display = 'block';
+    }
+    if (sidebarBrand) {
+      sidebarBrand.innerText = 'Tascorr';
+    }
+  }
+
   // Populate mobile header
   const mobileName = document.getElementById('mobile-user-name');
   const mobileGreeting = document.getElementById('mobile-greeting');

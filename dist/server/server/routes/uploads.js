@@ -7,6 +7,7 @@ const express_1 = require("express");
 const auth_middleware_js_1 = require("../middleware/auth.middleware.js");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const db_js_1 = __importDefault(require("../services/db.js"));
 const router = (0, express_1.Router)();
 const AVATARS_DIR = path_1.default.resolve(process.cwd(), 'public', 'avatars');
 // Ensure directory exists
@@ -70,9 +71,14 @@ router.post('/tenant-logo', auth_middleware_js_1.authenticateSession, auth_middl
         const filename = `tenant-${tenantId}.jpg`;
         const filepath = path_1.default.join(AVATARS_DIR, filename);
         fs_1.default.writeFileSync(filepath, buffer);
+        const logoUrl = `/avatars/${filename}`;
+        await db_js_1.default.tenant.update({
+            where: { id: tenantId },
+            data: { logoUrl }
+        });
         return res.status(200).json({
             message: 'Company logo uploaded successfully',
-            logoUrl: `/avatars/${filename}?t=${Date.now()}`
+            logoUrl: `${logoUrl}?t=${Date.now()}`
         });
     }
     catch (error) {

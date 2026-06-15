@@ -186,6 +186,7 @@ router.post('/login', async (req: Request, res: Response) => {
         rankTitle: user.rank.title,
         departmentId: user.departmentId,
         tenantName: user.tenant?.name || null,
+        tenantLogoUrl: user.tenant?.logoUrl || null,
       },
     });
   } catch (error: any) {
@@ -232,6 +233,7 @@ router.get('/session', authenticateSession, async (req: Request, res: Response) 
         departmentId: user.departmentId,
         departmentName: user.department?.name || null,
         tenantName: user.tenant?.name || null,
+        tenantLogoUrl: user.tenant?.logoUrl || null,
       },
     });
   } catch (error: any) {
