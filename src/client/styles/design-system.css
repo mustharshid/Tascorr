@@ -12,6 +12,7 @@
   --glass-surface: rgba(255, 255, 255, 0.30);
   --glass-border: rgba(255, 255, 255, 0.50);
   --glass-shadow: rgba(31, 38, 135, 0.05);
+  --mobile-nav-bg: rgba(255, 255, 255, 0.18);
 
   /* ── Text ── */
   --text-primary: #111827;
@@ -65,6 +66,7 @@
   --glass-surface: rgba(255, 255, 255, 0.04);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: rgba(0, 0, 0, 0.35);
+  --mobile-nav-bg: rgba(20, 20, 26, 0.2);
 
   --text-primary: #FFFFFF;
   --text-secondary: rgba(255, 255, 255, 0.65);
@@ -96,6 +98,7 @@
   --glass-surface: rgba(255, 255, 255, 0.85);
   --glass-border: rgba(203, 213, 225, 0.5);
   --glass-shadow: rgba(15, 23, 42, 0.08);
+  --mobile-nav-bg: rgba(248, 250, 252, 0.2);
 
   --text-primary: #0F172A;
   --text-secondary: #475569;
@@ -127,6 +130,7 @@
   --glass-surface: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(125, 211, 252, 0.5);
   --glass-shadow: rgba(3, 105, 161, 0.08);
+  --mobile-nav-bg: rgba(240, 249, 255, 0.2);
 
   --text-primary: #082F49;
   --text-secondary: #0369A1;
@@ -158,6 +162,7 @@
   --glass-surface: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(134, 239, 172, 0.5);
   --glass-shadow: rgba(21, 128, 61, 0.08);
+  --mobile-nav-bg: rgba(240, 253, 244, 0.2);
 
   --text-primary: #14532D;
   --text-secondary: #166534;
@@ -189,6 +194,7 @@
   --glass-surface: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(253, 186, 116, 0.5);
   --glass-shadow: rgba(194, 65, 12, 0.08);
+  --mobile-nav-bg: rgba(255, 247, 237, 0.2);
 
   --text-primary: #7C2D12;
   --text-secondary: #9A3412;
@@ -220,6 +226,7 @@
   --glass-surface: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(216, 180, 254, 0.5);
   --glass-shadow: rgba(126, 34, 206, 0.08);
+  --mobile-nav-bg: rgba(250, 245, 255, 0.2);
 
   --text-primary: #581C87;
   --text-secondary: #6B21A8;
@@ -251,6 +258,7 @@
   --glass-surface: rgba(255, 255, 255, 0.02);
   --glass-border: rgba(99, 102, 241, 0.2);
   --glass-shadow: rgba(0, 0, 0, 0.5);
+  --mobile-nav-bg: rgba(5, 5, 10, 0.2);
 
   --text-primary: #E0E7FF;
   --text-secondary: #818CF8;
@@ -317,6 +325,7 @@ body.public-route {
   padding: 0 !important;
   background-image: none !important;
 }
+
 body.public-route #app-layout {
   border: none !important;
   border-radius: 0 !important;
@@ -325,6 +334,7 @@ body.public-route #app-layout {
   max-height: none !important;
   background: transparent !important;
 }
+
 body.public-route .app-content {
   padding: 0 !important;
   max-width: none !important;
@@ -673,11 +683,11 @@ h3,
   right: 0;
   height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: var(--bg-primary);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
+  background: var(--mobile-nav-bg, rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border-neutral);
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
   z-index: 200;
   justify-content: space-around;
   align-items: center;
@@ -726,7 +736,8 @@ h3,
   transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
-.mobile-quick-action:hover, .mobile-quick-action:active {
+.mobile-quick-action:hover,
+.mobile-quick-action:active {
   transform: scale(1.05) translateY(2px);
   background-color: var(--accent-navy-secondary);
 }
@@ -740,11 +751,12 @@ h3,
 @media (max-width: 768px) {
   body {
     padding: 0;
-    overflow-x: hidden; /* no horizontal scroll unnecessarily */
+    overflow-x: hidden;
+    /* no horizontal scroll unnecessarily */
   }
 
   #app-layout {
-    background: #F9FAFB !important;
+    background: var(--canvas-bg) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: none !important;
@@ -772,13 +784,42 @@ h3,
     overflow-x: hidden;
   }
 
+  /* Tasks View Mobile Overrides: Natural scrolling + Edge-to-edge cards */
+  #tasks-page-wrapper {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  #tasks-workspace-container {
+    overflow: visible !important;
+  }
+
+  #tasks-master-pane {
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  #tasks-filter-bar {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    border-top: 1px solid var(--border-neutral) !important;
+  }
+
+  #task-items-container {
+    padding-top: 16px !important;
+    overflow: visible !important;
+  }
+
+
   .mobile-nav-bar {
     display: flex;
-    background: #FFFFFF !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    border-top: 1px solid #E5E7EB !important;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.03) !important;
+    background: var(--mobile-nav-bg, rgba(255, 255, 255, 0.18)) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-top: 1px solid var(--border-neutral) !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03) !important;
   }
 
   .mobile-nav-item {
@@ -786,19 +827,19 @@ h3,
   }
 
   .mobile-nav-item.active {
-    color: #111827;
+    color: var(--text-primary);
   }
 
   .desktop-only {
     display: none !important;
   }
-  
+
   .mobile-only {
     display: flex !important;
   }
 
   .mobile-nav-item.active svg {
-    background-color: #F3F4F6;
+    background-color: var(--bg-secondary);
     padding: 6px;
     border-radius: 50%;
     width: 32px;
@@ -825,7 +866,7 @@ h3,
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: 1px solid #E5E7EB !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
     border-radius: 20px !important;
   }
 
@@ -847,11 +888,13 @@ h3,
   }
 
   .pill-badge.status-info .badge-dot {
-    background-color: #EF4444 !important; /* using red dot for in progress as per design */
+    background-color: #EF4444 !important;
+    /* using red dot for in progress as per design */
   }
 
   .btn {
-    border-radius: 24px !important; /* rounded buttons */
+    border-radius: 24px !important;
+    /* rounded buttons */
   }
 }
 
@@ -1237,7 +1280,7 @@ input.input-success {
     background: #FFFFFF !important;
     border-radius: 32px 32px 0 0 !important;
     z-index: 1000 !important;
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.1) !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1) !important;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     flex-direction: column !important;
@@ -1256,12 +1299,27 @@ input.input-success {
   }
 
   #task-detail-back-btn {
-    display: none !important; /* using close button instead */
+    display: none !important;
+    /* using close button instead */
   }
 
-  /* Make mobile task lists clutter-free */
-  .task-list-item {
-    padding: 20px !important;
+  /* Full screen scrolling and edge-to-edge on mobile */
+  #tasks-page-wrapper {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  #tasks-workspace-container {
+    overflow: visible !important;
+  }
+
+  #tasks-filter-bar {
+    border-top: 1px solid var(--border-neutral) !important;
+  }
+
+  #task-items-container {
+    padding: 16px 0 !important; /* Padding for mobile cards */
+    overflow: visible !important;
   }
 
   .task-list-item p.body-text {
@@ -1393,6 +1451,7 @@ input.input-success {
   color: var(--status-warning);
   border-left: 3px solid var(--status-warning);
 }
+
 /* ============================================
    TASK CREATE DRAWER
    ============================================ */
@@ -1430,7 +1489,7 @@ input.input-success {
     border-left: none;
     transform: translateY(100%);
     background: #ffffff !important;
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
   }
 
   #task-create-drawer.open {

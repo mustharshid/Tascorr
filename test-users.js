@@ -1,22 +1,23 @@
-const { PrismaClient } = require('@prisma/client');
+const http = require('http');
 const jwt = require('jsonwebtoken');
-const prisma = new PrismaClient();
 
-async function run() {
-  const user = await prisma.user.findFirst({ where: { email: 'admin@company.com' } });
-  if (!user) return console.log("No users found");
-  
-  const token = jwt.sign(
-    { userId: user.id, email: user.email, tenantId: user.tenantId, rankLevel: user.rankId === 1 ? 0 : 1, departmentId: user.departmentId },
-    process.env.JWT_SECRET || 'tascorr-insecure-dev-secret-key-39281',
-    { expiresIn: '1h' }
-  );
+const token = jwt.sign(
+  { userId: 6, tenantId: 2, rankLevel: 2, departmentId: 1 },
+  'replace-with-a-very-secure-random-256-bit-key-for-production'
+);
 
-  const res = await fetch('http://127.0.0.1:5005/api/users', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  const data = await res.json();
-  console.log(JSON.stringify(data, null, 2));
-}
+const req = http.request({
+  hostname: 'localhost',
+  port: 3000,
+  path: '/api/users',
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer ' + token
+  }
+}, (res) => {
+  let data = '';
+  res.on('data', c => data += c);
+  res.on('end', () => console.log("Response:", JSON.stringify(JSON.parse(data), null, 2)));
+});
 
-run().finally(() => prisma.$disconnect());
+req.end();

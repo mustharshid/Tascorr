@@ -13,9 +13,11 @@ export class TaskCreateDrawer {
     this.overlayEl = null;
     this.users = [];
     this.departments = [];
+    this.subtasks = [];
   }
 
   async render() {
+    this.subtasks = [];
     // 1. Fetch available assignees and departments first
     try {
       const usersData = await fetchApi('GET', '/users?assignableOnly=true');
@@ -83,8 +85,8 @@ export class TaskCreateDrawer {
           <div style="width: 48px; height: 5px; background: #E5E7EB; border-radius: 3px; margin: 0 auto 20px auto; flex-shrink: 0;"></div>
           
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-shrink: 0;">
-            <h2 style="font-size: 20px; font-weight: 700; color: #111827;">New Task</h2>
-            <button id="close-drawer-btn" style="background: #F3F4F6; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #6B7280;">
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary);">New Task</h2>
+            <button id="close-drawer-btn" style="background: var(--sidebar-bg); border: none; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); flex-shrink: 0; box-sizing: border-box;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
@@ -94,23 +96,36 @@ export class TaskCreateDrawer {
           <form id="drawer-task-form" style="display: flex; flex-direction: column; gap: 24px; flex: 1; overflow-y: auto; padding-bottom: 100px;">
             <!-- Task Title -->
             <div style="display: flex; flex-direction: column; gap: 8px;">
-              <label class="small-text" style="font-size: 10px; font-weight: 600; color: #6B7280; letter-spacing: 0.05em; text-transform: uppercase;">Task Title</label>
-              <input type="text" id="task-title" required maxlength="100" placeholder="What needs to be done?" style="padding: 16px; border: none; border-radius: 16px; font-size: 16px; background-color: #F3F4F6; color: #111827; outline: none; font-weight: 500;" />
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Task Title</label>
+              <input type="text" id="task-title" required maxlength="100" placeholder="What needs to be done?" style="padding: 16px; border: none; border-radius: 16px; font-size: 16px; background-color: var(--sidebar-bg); color: var(--text-primary); outline: none; font-weight: 500;" />
             </div>
 
             <!-- Description -->
-            <textarea id="task-desc" required maxlength="2000" placeholder="Description (Optional)" style="padding: 16px; border: none; border-radius: 16px; font-size: 14px; background-color: #F3F4F6; color: #111827; outline: none; resize: none; height: 80px;"></textarea>
+            <textarea id="task-desc" required maxlength="2000" placeholder="Description (Optional)" style="padding: 16px; border: none; border-radius: 16px; font-size: 14px; background-color: var(--sidebar-bg); color: var(--text-primary); outline: none; resize: none; height: 80px;"></textarea>
+
+            <!-- Subtasks Checklist -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Subtasks Checklist</label>
+              <div id="mobile-subtasks-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="mobile-new-subtask" placeholder="Add a subtask..." style="flex: 1; padding: 12px; border: none; border-radius: 12px; font-size: 14px; background-color: var(--sidebar-bg); color: var(--text-primary); outline: none;" />
+                <button type="button" id="mobile-add-subtask-btn" style="background: var(--bg-secondary); border: none; border-radius: 12px; padding: 0 16px; font-weight: 600; color: var(--text-primary); cursor: pointer;">Add</button>
+              </div>
+            </div>
 
             <!-- Assign To -->
             <div style="display: flex; flex-direction: column; gap: 8px;">
-              <label class="small-text" style="font-size: 10px; font-weight: 600; color: #6B7280; letter-spacing: 0.05em; text-transform: uppercase;">Assign To</label>
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Assign To</label>
               <div style="display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none;">
                 ${filteredUsers.map(u => `
                   <div class="mobile-assignee-opt" data-id="${u.id}" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0;">
-                    <div style="width: 48px; height: 48px; border-radius: 50%; background: #F3F4F6; color: #111827; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; border: 2px solid transparent; transition: all 0.2s;">
-                      ${escapeHTML(u.firstName[0])}
+                    <div style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid transparent; padding: 2px; transition: all 0.2s;">
+                      <img src="/avatars/user-${u.id}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;" />
+                      <div style="width: 100%; height: 100%; border-radius: 50%; background: var(--sidebar-bg); color: var(--text-primary); display: none; align-items: center; justify-content: center; font-size: 16px; font-weight: 700;">
+                        ${escapeHTML(u.firstName[0])}
+                      </div>
                     </div>
-                    <span style="font-size: 11px; font-weight: 500; color: #6B7280;">${escapeHTML(u.firstName)}</span>
+                    <span style="font-size: 11px; font-weight: 500; color: var(--text-secondary);">${escapeHTML(u.firstName)}</span>
                   </div>
                 `).join('')}
               </div>
@@ -119,25 +134,25 @@ export class TaskCreateDrawer {
 
             <!-- Priority -->
             <div style="display: flex; flex-direction: column; gap: 8px;">
-              <label class="small-text" style="font-size: 10px; font-weight: 600; color: #6B7280; letter-spacing: 0.05em; text-transform: uppercase;">Priority</label>
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Priority</label>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <div class="mobile-priority-opt active" data-val="Medium" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #E0E7FF; color: #4338CA; cursor: pointer;">Medium</div>
-                <div class="mobile-priority-opt" data-val="Low" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #F3F4F6; color: #6B7280; cursor: pointer;">Low</div>
-                <div class="mobile-priority-opt" data-val="High" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #F3F4F6; color: #6B7280; cursor: pointer;">High</div>
-                <div class="mobile-priority-opt" data-val="Critical" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #F3F4F6; color: #6B7280; cursor: pointer;">Critical</div>
+                <div class="mobile-priority-opt" data-val="Low" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">Low</div>
+                <div class="mobile-priority-opt" data-val="High" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">High</div>
+                <div class="mobile-priority-opt" data-val="Critical" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">Critical</div>
               </div>
               <input type="hidden" id="task-priority" value="Medium" />
             </div>
 
             <!-- Due Date -->
             <div style="display: flex; flex-direction: column; gap: 8px;">
-              <label class="small-text" style="font-size: 10px; font-weight: 600; color: #6B7280; letter-spacing: 0.05em; text-transform: uppercase;">Due</label>
+              <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Due</label>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <div class="mobile-due-opt active" data-offset="0" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #E0E7FF; color: #4338CA; cursor: pointer;">Today</div>
-                <div class="mobile-due-opt" data-offset="1" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #F3F4F6; color: #6B7280; cursor: pointer;">Tomorrow</div>
-                <div class="mobile-due-opt" data-offset="7" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #F3F4F6; color: #6B7280; cursor: pointer;">Next week</div>
+                <div class="mobile-due-opt" data-offset="1" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">Tomorrow</div>
+                <div class="mobile-due-opt" data-offset="7" style="padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--sidebar-bg); color: var(--text-secondary); cursor: pointer;">Next week</div>
               </div>
-              <input type="hidden" id="task-due" value="${new Date().toISOString().split('T')[0]}" required />
+              <input type="date" id="task-due" value="${new Date().toISOString().split('T')[0]}" required style="margin-top: 8px; padding: 12px; border: none; border-radius: 12px; font-size: 14px; background-color: var(--sidebar-bg); color: var(--text-primary); outline: none; width: 100%; box-sizing: border-box;" />
             </div>
 
             <input type="hidden" id="task-dept" value="" />
@@ -190,6 +205,22 @@ export class TaskCreateDrawer {
                 </div>
               </label>
               <textarea id="task-desc" required maxlength="2000" placeholder="Provide clear contextual description parameters..." rows="4" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: vertical;"></textarea>
+            </div>
+
+            <!-- Subtasks Checklist -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <label class="small-text" style="font-weight: 600; color: var(--text-primary); display: flex; align-items: center;">
+                Subtasks Checklist
+                <div class="tooltip-container">
+                  <span class="help-icon">?</span>
+                  <span class="tooltip-text">Add smaller actionable items required to complete this task.</span>
+                </div>
+              </label>
+              <div id="desktop-subtasks-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="desktop-new-subtask" placeholder="e.g., Review quarter 1 metrics..." style="flex: 1; padding: 8px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;" />
+                <button type="button" id="desktop-add-subtask-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;">Add Subtask</button>
+              </div>
             </div>
 
             <!-- Due Date & Priority Grid -->
@@ -353,8 +384,8 @@ export class TaskCreateDrawer {
         opt.addEventListener('click', () => {
           document.querySelectorAll('.mobile-priority-opt').forEach(o => {
             o.classList.remove('active');
-            o.style.background = '#F3F4F6';
-            o.style.color = '#6B7280';
+            o.style.background = 'var(--sidebar-bg)';
+            o.style.color = 'var(--text-secondary)';
           });
           opt.classList.add('active');
           opt.style.background = '#E0E7FF';
@@ -369,8 +400,8 @@ export class TaskCreateDrawer {
         opt.addEventListener('click', () => {
           document.querySelectorAll('.mobile-due-opt').forEach(o => {
             o.classList.remove('active');
-            o.style.background = '#F3F4F6';
-            o.style.color = '#6B7280';
+            o.style.background = 'var(--sidebar-bg)';
+            o.style.color = 'var(--text-secondary)';
           });
           opt.classList.add('active');
           opt.style.background = '#E0E7FF';
@@ -385,6 +416,16 @@ export class TaskCreateDrawer {
         });
       });
 
+      if (dueInput) {
+        dueInput.addEventListener('change', () => {
+          document.querySelectorAll('.mobile-due-opt').forEach(o => {
+            o.classList.remove('active');
+            o.style.background = 'var(--sidebar-bg)';
+            o.style.color = 'var(--text-secondary)';
+          });
+        });
+      }
+
       // Assignee Avatar Scroll
       const assigneeHidden = document.getElementById('task-assignee');
       document.querySelectorAll('.mobile-assignee-opt').forEach(opt => {
@@ -397,6 +438,48 @@ export class TaskCreateDrawer {
         });
       });
     }
+
+    // Subtasks logic
+    const renderSubtasks = () => {
+      const listEl = isMobile ? document.getElementById('mobile-subtasks-list') : document.getElementById('desktop-subtasks-list');
+      if (!listEl) return;
+      listEl.innerHTML = this.subtasks.map((s, index) => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border-neutral); border-radius: var(--radius-md);">
+          <span style="font-size: 13px; color: var(--text-primary);">${escapeHTML(s)}</span>
+          <button type="button" data-index="${index}" class="remove-subtask-btn" style="background: none; border: none; color: var(--status-danger); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+      `).join('');
+
+      listEl.querySelectorAll('.remove-subtask-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = Number(e.currentTarget.dataset.index);
+          this.subtasks.splice(idx, 1);
+          renderSubtasks();
+        });
+      });
+    };
+
+    const addSubtaskBtn = isMobile ? document.getElementById('mobile-add-subtask-btn') : document.getElementById('desktop-add-subtask-btn');
+    const newSubtaskInput = isMobile ? document.getElementById('mobile-new-subtask') : document.getElementById('desktop-new-subtask');
+
+    if (addSubtaskBtn && newSubtaskInput) {
+      addSubtaskBtn.addEventListener('click', () => {
+        const val = newSubtaskInput.value.trim();
+        if (val) {
+          this.subtasks.push(val);
+          newSubtaskInput.value = '';
+          renderSubtasks();
+        }
+      });
+      newSubtaskInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addSubtaskBtn.click();
+        }
+      });
+    }
+
+    renderSubtasks();
 
     submitBtn?.addEventListener('click', () => {
       // Ensure assignee is selected on mobile before submitting
@@ -423,8 +506,16 @@ export class TaskCreateDrawer {
       const priority = document.getElementById('task-priority').value;
       const departmentId = document.getElementById('task-dept').value;
       const assigneeId = document.getElementById('task-assignee').value;
-      const isRecurring = recurringCheckbox.checked;
-      const recurrenceInterval = isRecurring ? document.getElementById('task-interval').value : null;
+      const isRecurring = recurringCheckbox ? recurringCheckbox.checked : false;
+      const recurrenceInterval = isRecurring && document.getElementById('task-interval') ? document.getElementById('task-interval').value : null;
+
+      // Auto-add any pending subtask text that hasn't been added yet
+      const isMobile = window.innerWidth <= 768;
+      const newSubtaskInput = isMobile ? document.getElementById('mobile-new-subtask') : document.getElementById('desktop-new-subtask');
+      if (newSubtaskInput && newSubtaskInput.value.trim()) {
+        this.subtasks.push(newSubtaskInput.value.trim());
+        newSubtaskInput.value = '';
+      }
 
       const errorAlert = document.getElementById('drawer-error-alert');
       if (errorAlert) {
@@ -479,6 +570,7 @@ export class TaskCreateDrawer {
           assigneeIds: [Number(assigneeId)],
           isRecurring,
           recurrenceInterval,
+          subtasks: this.subtasks,
         });
 
         Notifications.success('Task Created', 'Task assigned successfully.');

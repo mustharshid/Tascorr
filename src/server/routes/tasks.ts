@@ -14,7 +14,7 @@ const router = Router();
  * Create task (Manager or above within assignee scoping rules)
  */
 router.post('/', authenticateSession, async (req: Request, res: Response) => {
-  const { title, description, dueDate, priority, departmentId, assigneeIds, isRecurring, recurrenceInterval } = req.body;
+  const { title, description, dueDate, priority, departmentId, assigneeIds, isRecurring, recurrenceInterval, subtasks } = req.body;
   const tenantId = req.user!.tenantId;
 
   // 1. Validate mandatory fields
@@ -64,15 +64,27 @@ router.post('/', authenticateSession, async (req: Request, res: Response) => {
         },
       });
 
-      // Register initial active assignments
-      for (const assigneeId of assigneeIds) {
-        await tx.taskAssignment.create({
-          data: {
-            tenantId,
-            taskId: createdTask.id,
-            userId: assigneeId,
-            isActive: true,
-          },
+      // Create assignments
+      const assignmentData = assigneeIds.map((userId: number) => ({
+        tenantId,
+        taskId: createdTask.id,
+        userId,
+        isActive: true,
+      }));
+      await tx.taskAssignment.createMany({
+        data: assignmentData,
+      });
+
+      // Create subtasks if provided
+      if (Array.isArray(subtasks) && subtasks.length > 0) {
+        const subtasksData = subtasks.map((s: string) => ({
+          tenantId,
+          taskId: createdTask.id,
+          title: s,
+          status: 'Pending',
+        }));
+        await tx.subtask.createMany({
+          data: subtasksData,
         });
       }
 
@@ -798,4 +810,76 @@ router.patch('/:id/subtasks/:subtaskId', authenticateSession, async (req: Reques
   }
 });
 
+router.delete('/:id', authenticateSession, async (req: Request, res: Response) => {
+  const taskId = Number(req.params.id);
+
+  if (isNaN(taskId)) {
+    return res.status(400).json({ error: 'Invalid task ID.' });
+  }
+
+  try {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId }
+    });
+
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found.' });
+    }
+
+    if (task.tenantId !== req.user!.tenantId) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
+    // Only creator can delete
+    if (task.createdById !== req.user!.userId) {
+      return res.status(403).json({ error: 'Access denied. Only the task creator can delete this task.' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Delete task assignments
+      await tx.taskAssignment.deleteMany({ where: { taskId } });
+
+      // Delete blocker reports
+      await tx.blocker.deleteMany({ where: { taskId } });
+
+      // Delete task comments
+      await tx.taskComment.deleteMany({ where: { taskId } });
+
+      // Delete subtasks
+      await tx.subtask.deleteMany({ where: { taskId } });
+
+      // Delete task dependencies
+      await tx.taskDependency.deleteMany({
+        where: {
+          OR: [
+            { taskId },
+            { prerequisiteTaskId: taskId }
+          ]
+        }
+      });
+
+      // Delete the task itself
+      await tx.task.delete({ where: { id: taskId } });
+
+      // Write AuditLog
+      await tx.auditLog.create({
+        data: {
+          tenantId: req.user!.tenantId,
+          actorId: req.user!.userId,
+          action: 'TASK_DELETE',
+          entityType: 'Task',
+          entityId: taskId,
+          metadata: JSON.stringify({ title: task.title }),
+        },
+      });
+    });
+
+    return res.status(200).json({ message: 'Task deleted successfully.' });
+  } catch (error: any) {
+    console.error('Error deleting task:', error);
+    return res.status(500).json({ error: `Task deletion error: ${error.message}` });
+  }
+});
+
 export default router;
+

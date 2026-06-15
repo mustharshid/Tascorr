@@ -3,6 +3,7 @@
 
 import { fetchApi } from '../services/api.js';
 import { AuthState } from '../services/auth-state.js';
+import { escapeHTML } from '../services/sanitize.js';
 
 export function renderDashboardView() {
   return `
@@ -82,7 +83,7 @@ export function renderDashboardView() {
               <span style="font-size: 14px; font-weight: 500; color: #E5E7EB;">Weekly progress</span>
               <span id="mobile-hero-trend" style="background-color: rgba(255,255,255,0.15); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">📈 +0%</span>
             </div>
-            <h2 id="mobile-hero-pct" style="font-size: 48px; font-weight: 700; line-height: 1; margin-bottom: 24px;">0%</h2>
+            <h2 id="mobile-hero-pct" style="font-size: 48px; font-weight: 700; line-height: 1; margin-bottom: 24px; color: inherit;">0%</h2>
             <div style="width: 100%; height: 8px; background-color: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; margin-bottom: 12px;">
               <div id="mobile-hero-bar" style="height: 100%; width: 0%; background-color: #fff; border-radius: 4px;"></div>
             </div>
@@ -91,27 +92,37 @@ export function renderDashboardView() {
 
           <!-- Stat Cards -->
           <div style="display: flex; gap: 12px; justify-content: space-between;">
-            <div style="flex: 1; background: #fff; border: 1px solid #E5E7EB; border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-              <div id="mobile-stat-in-progress" style="font-size: 24px; font-weight: 700; color: #111827;">0</div>
-              <div style="font-size: 11px; color: #6B7280; margin-top: 4px;">In progress</div>
+            <div style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-neutral); border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+              <div id="mobile-stat-in-progress" style="font-size: 24px; font-weight: 700; color: var(--text-primary);">0</div>
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">In progress</div>
             </div>
-            <div style="flex: 1; background: #fff; border: 1px solid #E5E7EB; border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-              <div id="mobile-stat-due-today" style="font-size: 24px; font-weight: 700; color: #111827;">0</div>
-              <div style="font-size: 11px; color: #6B7280; margin-top: 4px;">Due today</div>
+            <div style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-neutral); border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+              <div id="mobile-stat-due-today" style="font-size: 24px; font-weight: 700; color: var(--text-primary);">0</div>
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Due today</div>
             </div>
-            <div style="flex: 1; background: #fff; border: 1px solid #E5E7EB; border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-              <div id="mobile-stat-completed" style="font-size: 24px; font-weight: 700; color: #111827;">0</div>
-              <div style="font-size: 11px; color: #6B7280; margin-top: 4px;">Completed</div>
+            <div style="flex: 1; background: var(--bg-primary); border: 1px solid var(--border-neutral); border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+              <div id="mobile-stat-completed" style="font-size: 24px; font-weight: 700; color: var(--text-primary);">0</div>
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Completed</div>
             </div>
           </div>
 
           <!-- Due Today Tasks List -->
           <div>
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;">
-              <h3 style="font-size: 18px; font-weight: 700; color: #111827;">Due today</h3>
-              <span id="mobile-due-today-count" style="font-size: 13px; color: #6B7280;">0 tasks</span>
+              <h3 style="font-size: 18px; font-weight: 700; color: var(--text-primary);">Due today</h3>
+              <span id="mobile-due-today-count" style="font-size: 13px; color: var(--text-secondary);">0 tasks</span>
             </div>
             <div id="mobile-due-today-list" style="display: flex; flex-direction: column; gap: 16px;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Team Workload Allocation -->
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;">
+              <h3 style="font-size: 18px; font-weight: 700; color: var(--text-primary);">Team Workload</h3>
+            </div>
+            <div id="mobile-workload-list" style="display: flex; flex-direction: column; gap: 16px;">
               <!-- Populated dynamically -->
             </div>
           </div>
@@ -141,7 +152,7 @@ export async function initDashboard() {
 
     const tasks = tasksRes.tasks || [];
     const workloadCounts = workloadRes.workload || {};
-    const users = usersRes.users || [];
+    const users = (usersRes.users || []).filter(u => u.rank?.level !== 0);
     const departments = deptsRes.departments || [];
     const notifications = notificationsRes.notifications || [];
 
@@ -244,6 +255,37 @@ export async function initDashboard() {
       }
     }
 
+    const mobileWorkloadList = document.getElementById('mobile-workload-list');
+    if (mobileWorkloadList && users.length > 0) {
+      const workloadMap = {};
+      users.forEach(u => { 
+        const counts = workloadCounts[u.id] || { count: 0, blocked: 0 };
+        workloadMap[u.id] = { user: u, count: counts.count, blocked: counts.blocked }; 
+      });
+      const workloadData = Object.values(workloadMap);
+      
+      mobileWorkloadList.innerHTML = workloadData.slice(0, 5).map(item => {
+        const u = item.user;
+        const pct = Math.min((item.count / 10) * 100, 100);
+        const isOverloaded = item.count >= 10;
+        const barColor = isOverloaded ? 'var(--status-danger)' : 'var(--accent-navy-primary)';
+        
+        return `
+          <div style="background: var(--bg-primary); border: 1px solid var(--border-neutral); border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span class="data-number" style="font-size: 14px; color: var(--text-primary); font-weight: 600;">${u.firstName} ${u.lastName}</span>
+              <span class="small-text" style="font-size: 12px; color: var(--text-secondary);">${item.count} active, ${item.blocked} blocked ${isOverloaded ? '<span style="color: var(--status-danger); font-weight: 600;">(Overloaded)</span>' : ''}</span>
+            </div>
+            <div style="height: 8px; background-color: var(--bg-tertiary); border-radius: var(--radius-md); overflow: hidden;">
+              <div style="width: ${pct}%; height: 100%; background-color: ${barColor}; border-radius: var(--radius-md); transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else if (mobileWorkloadList) {
+      mobileWorkloadList.innerHTML = `<p class="small-text" style="padding: 16px 0; text-align: center;">No team members registered.</p>`;
+    }
+
     // 3. Mount Departmental Activity
     const deptList = document.getElementById('departmental-list');
     if (deptList) {
@@ -276,7 +318,7 @@ export async function initDashboard() {
         logs.push({
           type: 'INFO',
           label: 'CREATION',
-          text: `Task <strong>#${t.id} (${t.title})</strong> was created.`,
+          text: `Task <strong>${escapeHTML(t.title)}</strong> was created.`,
           time: new Date(t.createdAt),
           badge: 'status-info'
         });
@@ -286,7 +328,7 @@ export async function initDashboard() {
           logs.push({
             type: 'DANGER',
             label: 'BLOCK',
-            text: `Task <strong>#${t.id} (${t.title})</strong> flagged as <strong>Blocked</strong>.`,
+            text: `Task <strong>${escapeHTML(t.title)}</strong> flagged as <strong>Blocked</strong>.`,
             time: new Date(b.createdAt),
             badge: 'status-danger'
           });
@@ -294,7 +336,7 @@ export async function initDashboard() {
             logs.push({
               type: 'SUCCESS',
               label: 'RESOLVED',
-              text: `Blocker on Task <strong>#${t.id}</strong> resolved.`,
+              text: `Blocker on Task <strong>${escapeHTML(t.title)}</strong> resolved.`,
               time: new Date(b.resolvedAt),
               badge: 'status-success'
             });
@@ -395,7 +437,7 @@ export async function initDashboard() {
       if (mDueTodayCount) mDueTodayCount.innerText = `${dueTodayTasks.length} tasks`;
       
       if (dueTodayTasks.length === 0) {
-        mDueTodayList.innerHTML = `<div style="text-align: center; color: #6B7280; font-size: 13px; padding: 20px;">No tasks due today.</div>`;
+        mDueTodayList.innerHTML = `<div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 20px;">No tasks due today.</div>`;
       } else {
         mDueTodayList.innerHTML = dueTodayTasks.map(t => {
           const assigneeName = t.assignments?.length > 0 ? `${t.assignments[0].user.firstName} ${t.assignments[0].user.lastName}` : 'Unassigned';
@@ -413,22 +455,22 @@ export async function initDashboard() {
           const subtasksPct = Math.round((subtasksDone / Math.max(1, subtasksTotal)) * 100);
 
           return `
-            <div style="background: #fff; border: 1px solid #E5E7EB; border-radius: 20px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+            <div style="background: var(--bg-primary); border: 1px solid var(--border-neutral); border-radius: 20px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <div style="display: flex; gap: 8px; align-items: center;">
                   <span style="color: ${priorityColor}; background: ${priorityColor}15; padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: 700;">${t.priority}</span>
-                  <span style="color: #6B7280; font-size: 12px; font-weight: 500;">General</span>
+                  <span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">General</span>
                 </div>
                 <div style="background: #F3F4F6; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; color: #4B5563; display: flex; align-items: center; gap: 4px;">
                   <span style="display: block; width: 6px; height: 6px; border-radius: 50%; background: #EF4444;"></span> ${t.status}
                 </div>
               </div>
-              <h4 style="font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 16px;">${t.title}</h4>
+              <h4 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">${t.title}</h4>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6B7280;">
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary);">
                   <input type="radio" checked style="accent-color: #111827; pointer-events: none;" /> ${subtasksDone}/${subtasksTotal} subtasks
                 </div>
-                <span style="font-size: 11px; color: #6B7280;">${subtasksPct}%</span>
+                <span style="font-size: 11px; color: var(--text-secondary);">${subtasksPct}%</span>
               </div>
               <div style="width: 100%; height: 4px; background: #E5E7EB; border-radius: 2px; margin-bottom: 16px; overflow: hidden;">
                 <div style="height: 100%; width: ${subtasksPct}%; background: #111827; border-radius: 2px;"></div>
@@ -436,10 +478,10 @@ export async function initDashboard() {
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   ${assigneeId ? `<img src="/avatars/user-${assigneeId}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" />` : ''}
-                  <div style="width: 24px; height: 24px; border-radius: 50%; background: #F3F4F6; color: #111827; display: ${assigneeId ? 'none' : 'flex'}; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;">${initial}</div>
-                  <span style="font-size: 12px; font-weight: 500; color: #111827;">${assigneeName}</span>
+                  <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--sidebar-bg); color: var(--text-primary); display: ${assigneeId ? 'none' : 'flex'}; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;">${initial}</div>
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);">${assigneeName}</span>
                 </div>
-                <span style="font-size: 12px; font-weight: 600; color: #111827;">Today</span>
+                <span style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Today</span>
               </div>
             </div>
           `;

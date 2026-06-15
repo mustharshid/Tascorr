@@ -11,30 +11,51 @@ let allTasks = [];
 let selectedTask = null;
 let createDrawer = null;
 let allUsers = [];
+let currentTaskTab = localStorage.getItem('tascorr_task_tab') || 'assigned';
+let showCompletedTasks = localStorage.getItem('tascorr_show_completed') === 'true';
 
 export function renderTasksView() {
   return `
-    <div style="display: flex; flex-direction: column; gap: 24px; height: calc(100vh - var(--header-height) - 64px); overflow: hidden;">
+    <div id="tasks-page-wrapper" style="display: flex; flex-direction: column; gap: 24px; height: calc(100vh - var(--header-height) - 64px); overflow: hidden;">
       <!-- Title & Toolbar -->
       <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
         <div>
           <h1 class="page-title" style="font-size: 28px;">Tasks</h1>
-          <p class="body-text">Manage, delegate, track work items and dependencies.</p>
         </div>
-        <button id="workspace-create-task-btn" class="menu-item active" style="padding: 10px 18px; border-radius: var(--radius-md); border: none; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 16px; height: 16px;">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Create Task
-        </button>
+        <div style="display: flex; gap: 12px;">
+          <button id="workspace-toggle-filters-btn" class="menu-item" style="padding: 10px 18px; border-radius: var(--radius-md); border: 1px solid var(--border-neutral); background: var(--bg-primary); font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 16px; height: 16px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+            </svg>
+            Filters
+          </button>
+          <button id="workspace-create-task-btn" class="menu-item active" style="padding: 10px 18px; border-radius: var(--radius-md); border: none; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 16px; height: 16px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Create Task
+          </button>
+        </div>
       </div>
 
       <!-- High-Density Split Workspace Engine -->
       <div id="tasks-workspace-container" style="display: flex; gap: 24px; flex: 1; overflow: hidden; min-height: 0;">
         <!-- Left Side: Task List Master Pane -->
         <div id="tasks-master-pane" style="flex: 1; background-color: var(--bg-primary); border: 1px solid var(--border-neutral); border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden;">
+          <!-- Segmented Control Tabs & Show Completed Toggle -->
+          <div style="padding: 16px 16px 0 16px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div style="display: flex; background-color: var(--bg-secondary); border-radius: var(--radius-lg); padding: 4px; border: 1px solid var(--border-neutral); flex: 1; min-width: 200px;">
+              <button id="tab-assigned" class="task-tab-btn ${currentTaskTab === 'assigned' ? 'active' : ''}" style="flex: 1; padding: 10px; border: none; border-radius: var(--radius-md); font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; background: ${currentTaskTab === 'assigned' ? 'var(--bg-primary)' : 'transparent'}; color: ${currentTaskTab === 'assigned' ? 'var(--text-primary)' : 'var(--text-secondary)'}; box-shadow: ${currentTaskTab === 'assigned' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'};">My Tasks</button>
+              <button id="tab-delegated" class="task-tab-btn ${currentTaskTab === 'delegated' ? 'active' : ''}" style="flex: 1; padding: 10px; border: none; border-radius: var(--radius-md); font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; background: ${currentTaskTab === 'delegated' ? 'var(--bg-primary)' : 'transparent'}; color: ${currentTaskTab === 'delegated' ? 'var(--text-primary)' : 'var(--text-secondary)'}; box-shadow: ${currentTaskTab === 'delegated' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'};">Delegated</button>
+            </div>
+            <label style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-neutral); background: var(--bg-secondary); cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-primary); user-select: none; transition: all 0.2s; margin-bottom: 0;">
+              <input type="checkbox" id="task-show-completed" ${showCompletedTasks ? 'checked' : ''} style="width: 16px; height: 16px; accent-color: var(--accent-navy-primary); cursor: pointer;" />
+              <span>Show Completed</span>
+            </label>
+          </div>
+
           <!-- Search & Filter Controls -->
-          <div style="padding: 16px; border-bottom: 1px solid var(--border-neutral); display: flex; gap: 12px; flex-shrink: 0; flex-wrap: wrap;">
+          <div id="tasks-filter-bar" style="padding: 16px; border-bottom: 1px solid var(--border-neutral); display: none; gap: 12px; flex-shrink: 0; flex-wrap: wrap; background-color: var(--bg-primary);">
             <input type="text" id="task-search-input" placeholder="Search tasks, descriptions..." style="flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary);" />
             <select id="task-status-filter" style="padding: 8px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary);">
               <option value="ALL">All Statuses</option>
@@ -54,7 +75,7 @@ export function renderTasksView() {
           </div>
 
           <!-- Task List Items -->
-          <div id="task-items-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
+          <div id="task-items-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding: 16px;">
             <div style="padding: 24px; text-align: center; color: var(--text-secondary);">Loading tasks...</div>
           </div>
         </div>
@@ -89,10 +110,64 @@ export async function initTasksListeners() {
   createDrawer = new TaskCreateDrawer(() => {
     loadTasks();
   });
-  
+
   const createBtn = document.getElementById('workspace-create-task-btn');
+  const toggleFiltersBtn = document.getElementById('workspace-toggle-filters-btn');
+  const filterBar = document.getElementById('tasks-filter-bar');
+
+  // Segmented Tabs interactions
+  const tabAssigned = document.getElementById('tab-assigned');
+  const tabDelegated = document.getElementById('tab-delegated');
+  const showCompletedCheckbox = document.getElementById('task-show-completed');
+
+  const switchTab = (tab) => {
+    currentTaskTab = tab;
+    localStorage.setItem('tascorr_task_tab', tab);
+    
+    [tabAssigned, tabDelegated].forEach(btn => {
+      if (!btn) return;
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-secondary)';
+      btn.style.boxShadow = 'none';
+      btn.classList.remove('active');
+    });
+
+    const activeBtn = tab === 'assigned' ? tabAssigned : tabDelegated;
+    if (activeBtn) {
+      activeBtn.style.background = 'var(--bg-primary)';
+      activeBtn.style.color = 'var(--text-primary)';
+      activeBtn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+      activeBtn.classList.add('active');
+    }
+
+    renderTaskList();
+  };
+
+  tabAssigned?.addEventListener('click', () => switchTab('assigned'));
+  tabDelegated?.addEventListener('click', () => switchTab('delegated'));
+
+  showCompletedCheckbox?.addEventListener('change', (e) => {
+    showCompletedTasks = e.target.checked;
+    localStorage.setItem('tascorr_show_completed', showCompletedTasks);
+    renderTaskList();
+  });
+
   createBtn?.addEventListener('click', () => {
     createDrawer.open();
+  });
+
+  toggleFiltersBtn?.addEventListener('click', () => {
+    if (filterBar) {
+      if (filterBar.style.display === 'none') {
+        filterBar.style.display = 'flex';
+        toggleFiltersBtn.classList.add('active');
+        toggleFiltersBtn.style.color = 'var(--accent-navy-primary)';
+      } else {
+        filterBar.style.display = 'none';
+        toggleFiltersBtn.classList.remove('active');
+        toggleFiltersBtn.style.color = 'var(--text-primary)';
+      }
+    }
   });
 
   // Filter listeners
@@ -136,12 +211,32 @@ function renderTaskList() {
   const query = document.getElementById('task-search-input')?.value.toLowerCase() || '';
   const status = document.getElementById('task-status-filter')?.value || 'ALL';
   const priority = document.getElementById('task-priority-filter')?.value || 'ALL';
+  const currentUser = AuthState.currentUser;
 
   const filtered = allTasks.filter(t => {
+    let matchesTab = true;
+    if (currentUser) {
+      const isAssignedToMe = t.assignments?.some(a => a.userId === currentUser.id);
+      const isDelegatedByMe = t.createdById === currentUser.id && !isAssignedToMe;
+      if (currentTaskTab === 'assigned') {
+        matchesTab = isAssignedToMe;
+      } else if (currentTaskTab === 'delegated') {
+        matchesTab = isDelegatedByMe;
+      }
+    }
+
     const matchesSearch = t.title.toLowerCase().includes(query) || t.description.toLowerCase().includes(query);
     const matchesStatus = status === 'ALL' || t.status === status;
     const matchesPriority = priority === 'ALL' || t.priority === priority;
-    return matchesSearch && matchesStatus && matchesPriority;
+
+    let matchesCompletedFilter = true;
+    if (t.status === 'Completed') {
+      if (status !== 'Completed') {
+        matchesCompletedFilter = showCompletedTasks;
+      }
+    }
+
+    return matchesTab && matchesSearch && matchesStatus && matchesPriority && matchesCompletedFilter;
   });
 
   if (filtered.length === 0) {
@@ -156,55 +251,80 @@ function renderTaskList() {
 
   container.innerHTML = filtered.map(t => {
     const isSelected = selectedTask && selectedTask.id === t.id;
-    const bg = isSelected ? 'var(--bg-tertiary)' : 'transparent';
-    const borderLeft = isSelected ? '4px solid var(--accent-navy-primary)' : '4px solid transparent';
-    
-    // Status colors
-    const statusMap = {
-      'Pending': 'status-info',
-      'In Progress': 'status-info',
-      'Blocked': 'status-danger',
-      'Under Review': 'status-warning',
-      'Completed': 'status-success'
-    };
-    const statusClass = statusMap[t.status] || 'status-info';
-    
+    const borderStyle = isSelected ? `border: 2px solid var(--accent-navy-primary);` : `border: 1px solid var(--border-neutral);`;
+
     // Priority badge
-    const priorityMap = {
-      'Critical': 'status-danger',
-      'High': 'status-warning',
-      'Medium': 'status-info',
-      'Low': 'status-success'
+    const priorityColorMap = {
+      'High': '#DC2626', 'Critical': '#DC2626', 'Medium': '#D97706', 'Low': '#10B981'
     };
-    const priorityClass = priorityMap[t.priority] || 'status-info';
-    
-    const assigneeName = t.assignments?.length > 0 
-      ? `${t.assignments[0].user.firstName} ${t.assignments[0].user.lastName}` 
+    const priorityColor = priorityColorMap[t.priority] || '#3B82F6';
+
+    const statusDotMap = {
+      'Pending': '#3B82F6', 'In Progress': '#10B981', 'Blocked': '#EF4444', 'Under Review': '#F59E0B', 'Completed': '#16A34A'
+    };
+    const statusDot = statusDotMap[t.status] || '#3B82F6';
+
+    let assigneeName = t.assignments?.length > 0
+      ? `${t.assignments[0].user.firstName} ${t.assignments[0].user.lastName}`
       : 'Unassigned';
-    const assigneeId = t.assignments?.length > 0 ? t.assignments[0].userId : null;
-    const assigneeInitial = assigneeName !== 'Unassigned' ? t.assignments[0].user.firstName[0] : '?';
+    let assigneeId = t.assignments?.length > 0 ? t.assignments[0].userId : null;
+    let assigneeInitial = assigneeName !== 'Unassigned' ? t.assignments[0].user.firstName[0] : '?';
+    let prefix = '';
+
+    if (assigneeId === AuthState.currentUser?.id) {
+      if (t.creator) {
+        assigneeName = `${t.creator.firstName} ${t.creator.lastName}`;
+        assigneeId = t.creator.id;
+        assigneeInitial = t.creator.firstName[0];
+        prefix = 'From: ';
+      } else {
+        assigneeName = 'System';
+        assigneeId = null;
+        assigneeInitial = 'S';
+        prefix = 'From: ';
+      }
+    }
+
+    const subtasksTotal = t.subtasks?.length || 0;
+    const subtasksDone = t.subtasks?.filter(s => s.status === 'Completed').length || 0;
+    const subtasksPct = subtasksTotal > 0 ? Math.round((subtasksDone / subtasksTotal) * 100) : (t.status === 'Completed' ? 100 : 0);
 
     return `
-      <div class="task-list-item" data-id="${t.id}" style="padding: 16px; border-bottom: 1px solid var(--border-neutral); cursor: pointer; background-color: ${bg}; border-left: ${borderLeft}; display: flex; flex-direction: column; gap: 8px; transition: background-color 0.15s ease;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="small-text" style="font-weight: 600;">TASK-#${t.id}</span>
-          <span class="pill-badge ${statusClass}"><span class="badge-dot"></span>${escapeHTML(t.status)}</span>
-        </div>
-        <h4 class="card-title" style="font-size: 15px; font-weight: 600; line-height: 1.3;">${escapeHTML(t.title)}</h4>
-        <p class="body-text" style="font-size: 12px; max-height: 36px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${escapeHTML(t.description)}</p>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            ${assigneeId ? `
-              <img src="/avatars/user-${assigneeId}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:16px;height:16px;border-radius:50%;object-fit:cover;" />
-              <div style="width:16px;height:16px;border-radius:50%;background:var(--accent-navy-primary);color:#fff;display:none;align-items:center;justify-content:center;font-size:8px;font-weight:bold;">${escapeHTML(assigneeInitial)}</div>
-            ` : ''}
-            <span class="small-text">Assignee: <strong>${escapeHTML(assigneeName)}</strong></span>
+      <div class="task-list-item" data-id="${t.id}" style="background: var(--bg-primary); ${borderStyle} border-radius: 20px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); margin-bottom: 16px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; ${isSelected ? 'transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37,99,235,0.15);' : ''}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="color: ${priorityColor}; background: ${priorityColor}15; padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: 700;">${t.priority}</span>
+            <span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">General</span>
           </div>
-          <span class="pill-badge ${priorityClass}" style="padding: 2px 6px; font-size: 10px;">${escapeHTML(t.priority)}</span>
+          <div style="background: var(--bg-secondary); padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;">
+            <span style="display: block; width: 6px; height: 6px; border-radius: 50%; background: ${statusDot};"></span> ${t.status}
+          </div>
         </div>
-        <div style="margin-top: 4px; border-top: 1px dashed var(--border-neutral); padding-top: 6px;">
+        <h4 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${escapeHTML(t.title)}</h4>
+        <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 16px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${escapeHTML(t.description)}</p>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${subtasksTotal > 0 ? '8px' : '0'};">
+          ${subtasksTotal > 0 ? `
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary);">
+            <input type="radio" checked style="accent-color: var(--text-primary); pointer-events: none;" /> ${subtasksDone}/${subtasksTotal} subtasks
+          </div>
+          <span style="font-size: 11px; color: var(--text-secondary);">${subtasksPct}%</span>
+          ` : '<div></div>'}
+        </div>
+        ${subtasksTotal > 0 ? `
+        <div style="width: 100%; height: 4px; background: var(--bg-secondary); border-radius: 2px; margin-bottom: 16px; overflow: hidden;">
+          <div style="height: 100%; width: ${subtasksPct}%; background: var(--text-primary); border-radius: 2px;"></div>
+        </div>
+        ` : ''}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-neutral); padding-top: 12px; margin-top: ${subtasksTotal > 0 ? '0' : '16px'};">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${assigneeId ? `<img src="/avatars/user-${assigneeId}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" />` : ''}
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--sidebar-bg); color: var(--text-primary); display: ${assigneeId ? 'none' : 'flex'}; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;">${assigneeInitial}</div>
+            <span style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">${prefix}${escapeHTML(assigneeName)}</span>
+          </div>
           <span class="small-text" style="color: var(--text-secondary); font-size: 10px;">
-            Assigned by ${t.creator ? escapeHTML(t.creator.firstName + ' ' + t.creator.lastName) : 'System'} on ${new Date(t.createdAt).toLocaleDateString()} at ${new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            ${new Date(t.createdAt).toLocaleDateString()}
           </span>
         </div>
       </div>
@@ -237,7 +357,7 @@ async function loadTaskDetails(id) {
   try {
     const data = await fetchApi('GET', `/tasks/${id}`);
     selectedTask = data.task;
-    
+
     const t = selectedTask;
 
     const statusMap = {
@@ -249,8 +369,8 @@ async function loadTaskDetails(id) {
     };
     const statusClass = statusMap[t.status] || 'status-info';
     const activeAssignee = t.assignments?.find(a => a.isActive);
-    const assigneeName = activeAssignee 
-      ? `${activeAssignee.user.firstName} ${activeAssignee.user.lastName}` 
+    const assigneeName = activeAssignee
+      ? `${activeAssignee.user.firstName} ${activeAssignee.user.lastName}`
       : 'Unassigned';
     const assigneeId = activeAssignee ? activeAssignee.userId : null;
     const assigneeInitial = activeAssignee ? activeAssignee.user.firstName[0] : '?';
@@ -259,27 +379,27 @@ async function loadTaskDetails(id) {
     const isAdmin = AuthState.isAdmin();
     const isCreator = t.createdById === AuthState.currentUser?.id;
     const isAssignee = activeAssignee && activeAssignee.userId === AuthState.currentUser?.id;
-    
+
     // Check resolve blocker privilege (creator, deptHead, or admin)
     const canResolveBlocker = isAdmin || isCreator;
 
     // Build Subtask lists
-    const subtaskHtml = t.subtasks?.length > 0 
+    const subtaskHtml = t.subtasks?.length > 0
       ? t.subtasks.map(s => {
-          const checked = s.status === 'Completed' ? 'checked' : '';
-          const lineThrough = s.status === 'Completed' ? 'text-decoration: line-through; color: var(--text-secondary);' : '';
-          return `
+        const checked = s.status === 'Completed' ? 'checked' : '';
+        const lineThrough = s.status === 'Completed' ? 'text-decoration: line-through; color: var(--text-secondary);' : '';
+        return `
             <label style="display: flex; align-items: center; gap: 10px; font-size: 13px; cursor: pointer; ${lineThrough}">
               <input type="checkbox" class="subtask-chk" data-sid="${s.id}" ${checked} style="accent-color: var(--accent-navy-primary);" />
               <span>${escapeHTML(s.title)}</span>
             </label>
           `;
-        }).join('')
+      }).join('')
       : `<p class="small-text" style="color: var(--text-secondary);">No subtask checklist items defined.</p>`;
 
     // Build Assignment Audit Trails
     const activeBlocker = t.blockers?.find(b => !b.resolvedAt);
-    
+
     // Actions block: 
     // If completed, terminal! Cannot update status anymore.
     const isCompleted = t.status === 'Completed';
@@ -323,6 +443,13 @@ async function loadTaskDetails(id) {
           </button>
         `;
       }
+      if (isCreator) {
+        actionButtons += `
+          <button id="delete-task-btn" style="padding: 10px; background-color: transparent; border: 1px solid var(--status-danger); color: var(--status-danger); border-radius: var(--radius-md); font-weight: 600; cursor: pointer; font-size: 13px;">
+            Delete Task
+          </button>
+        `;
+      }
     }
 
     panel.innerHTML = `
@@ -333,8 +460,7 @@ async function loadTaskDetails(id) {
         <button id="task-detail-back-btn" class="btn btn-secondary" style="display: none; align-items: center; gap: 6px; width: fit-content; margin-bottom: 8px; font-size: 12px; padding: 6px 12px; height: 32px; min-height: 32px;">
           &larr; Back to Tasks
         </button>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="data-number" style="color: var(--text-secondary); font-size: 13px;">TASK-#${t.id}</span>
+        <div style="display: flex; justify-content: flex-end; align-items: center;">
           <span class="pill-badge ${statusClass}"><span class="badge-dot"></span>${escapeHTML(t.status)}</span>
         </div>
         <h2 class="section-title" style="font-size: 20px; line-height: 1.3;">${escapeHTML(t.title)}</h2>
@@ -415,8 +541,8 @@ async function loadTaskDetails(id) {
           
           <!-- Comments List -->
           <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; max-height: 200px; overflow-y: auto;">
-            ${t.comments?.length > 0 
-              ? t.comments.map(c => `
+            ${t.comments?.length > 0
+        ? t.comments.map(c => `
                   <div style="background-color: var(--bg-secondary); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border-neutral);">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                       <span class="small-text" style="font-weight: 600; color: var(--text-primary);">${c.author ? escapeHTML(c.author.firstName + ' ' + c.author.lastName) : 'Unknown User'}</span>
@@ -425,7 +551,7 @@ async function loadTaskDetails(id) {
                     <p class="body-text" style="font-size: 12px; color: var(--text-primary); margin:0;">${escapeHTML(c.content)}</p>
                   </div>
                 `).join('')
-              : `<p class="small-text" style="color: var(--text-secondary); text-align: center; padding: 12px 0;">No logs or comments posted.</p>`}
+        : `<p class="small-text" style="color: var(--text-secondary); text-align: center; padding: 12px 0;">No logs or comments posted.</p>`}
           </div>
 
           <!-- Add comment input -->
@@ -443,73 +569,82 @@ async function loadTaskDetails(id) {
       </div>
 
       <!-- ================== MOBILE BOTTOM SHEET ================== -->
-      <div class="mobile-only" style="display:flex; flex-direction:column; height:100%; width: 100%; background: #fff; padding: 24px; padding-bottom: 0; position: relative; border-radius: 32px 32px 0 0;">
-        <!-- Drag Handle -->
-        <div style="width: 48px; height: 5px; background: #E5E7EB; border-radius: 3px; margin: 0 auto 20px auto; flex-shrink: 0;"></div>
+      <div class="mobile-only" style="display:flex; flex-direction:column; height:100%; width: 100%; background: #fff; position: relative; border-radius: 32px 32px 0 0; overflow: hidden;">
         
-        <!-- Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-shrink: 0;">
-          <div style="background: #F3F4F6; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; color: #4B5563; display: flex; align-items: center; gap: 6px;">
-            <span style="display: block; width: 6px; height: 6px; border-radius: 50%; background: #EF4444;"></span> ${escapeHTML(t.status)}
-          </div>
-          <button id="mobile-task-detail-close" style="background: #F3F4F6; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #6B7280;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-
-        <h2 style="font-size: 24px; font-weight: 700; color: #111827; margin-bottom: 8px; line-height: 1.2; flex-shrink: 0;">${escapeHTML(t.title)}</h2>
-        <p style="font-size: 14px; color: #6B7280; line-height: 1.5; margin-bottom: 24px; flex-shrink: 0;">${escapeHTML(t.description)}</p>
-
-        <!-- Info Cards -->
-        <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-shrink: 0;">
-          <div style="flex: 1; border: 1px solid #E5E7EB; border-radius: 16px; padding: 12px;">
-            <div style="font-size: 11px; color: #6B7280; margin-bottom: 4px;">Project</div>
-            <div style="font-size: 13px; font-weight: 600; color: #111827;">General</div>
-          </div>
-          <div style="flex: 1; border: 1px solid #E5E7EB; border-radius: 16px; padding: 12px;">
-            <div style="font-size: 11px; color: #6B7280; margin-bottom: 4px;">Priority</div>
-            <div style="font-size: 13px; font-weight: 600; color: #DC2626;">${escapeHTML(t.priority)}</div>
-          </div>
-          <div style="flex: 1; border: 1px solid #E5E7EB; border-radius: 16px; padding: 12px;">
-            <div style="font-size: 11px; color: #6B7280; margin-bottom: 4px;">Due</div>
-            <div style="font-size: 13px; font-weight: 600; color: #111827;">Today</div>
+        <!-- Fixed Header Area -->
+        <div style="padding: 24px 24px 16px 24px; flex-shrink: 0; border-bottom: 1px solid var(--border-neutral);">
+          <!-- Drag Handle -->
+          <div style="width: 48px; height: 5px; background: #E5E7EB; border-radius: 3px; margin: 0 auto 20px auto;"></div>
+          
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div style="display: flex; gap: 8px;">
+              <span style="padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(59,130,246,0.1); color: #3B82F6;">${t.department?.name || 'General'}</span>
+              <span class="${statusClass}" style="padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">${t.status}</span>
+            </div>
+            <button id="mobile-task-detail-close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
           </div>
         </div>
 
-        <!-- Assigned To -->
-        <div style="background: #F9FAFB; border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-shrink: 0;">
-          ${assigneeId ? `<img src="/avatars/user-${assigneeId}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />` : ''}
-          <div style="width: 40px; height: 40px; border-radius: 50%; background: #E5E7EB; color: #111827; display: ${assigneeId ? 'none' : 'flex'}; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">${escapeHTML(assigneeInitial)}</div>
+        <!-- Scrollable Content Area -->
+        <div style="flex: 1; overflow-y: auto; padding: 24px; padding-bottom: 100px;">
+          <h2 style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; line-height: 1.2;">${escapeHTML(t.title)}</h2>
+          <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px;">${escapeHTML(t.description)}</p>
+
+          <!-- Cards Row -->
+          <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+            <div style="flex: 1; background: var(--bg-secondary); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border-neutral);">
+              <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Due Date</span>
+              <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${new Date(t.dueDate).toLocaleDateString()}</span>
+            </div>
+            <div style="flex: 1; background: var(--bg-secondary); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border-neutral);">
+              <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Priority</span>
+              <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${t.priority}</span>
+            </div>
+          </div>
+
+          <!-- Assigned To -->
+          <div style="background: #F9FAFB; border-radius: 16px; padding: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; border: 1px solid var(--border-neutral);">
+            ${assigneeId ? `<img src="/avatars/user-${assigneeId}.jpg" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />` : ''}
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--sidebar-bg); color: var(--text-primary); display: ${assigneeId ? 'none' : 'flex'}; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">${assigneeInitial}</div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Assigned To</span>
+              <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${escapeHTML(assigneeName)}</span>
+            </div>
+          </div>
+
+          <!-- Subtasks -->
           <div>
-            <div style="font-size: 10px; color: #6B7280; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">Assigned to</div>
-            <div style="font-size: 14px; font-weight: 600; color: #111827;">${escapeHTML(assigneeName)}</div>
-          </div>
-        </div>
-
-        <!-- Subtasks -->
-        <div style="flex: 1; overflow-y: auto; padding-bottom: 100px;">
-          <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 16px;">Subtasks</h3>
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            ${t.subtasks?.length > 0 ? t.subtasks.map(s => {
-              const isDone = s.status === 'Completed';
-              return `
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <div class="mobile-subtask-toggle" data-sid="${s.id}" data-done="${isDone}" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid ${isDone ? '#3B82F6' : '#D1D5DB'}; background: ${isDone ? '#3B82F6' : 'transparent'}; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    ${isDone ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>` : ''}
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">Subtasks</h3>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              ${t.subtasks?.length > 0 ? t.subtasks.map(s => {
+                const isDone = s.status === 'Completed';
+                return `
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="mobile-subtask-toggle" data-sid="${s.id}" data-done="${isDone}" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid ${isDone ? '#3B82F6' : '#D1D5DB'}; background: ${isDone ? '#3B82F6' : 'transparent'}; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;">
+                      ${isDone ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>` : ''}
+                    </div>
+                    <span style="font-size: 14px; color: ${isDone ? '#9CA3AF' : 'var(--text-primary)'}; text-decoration: ${isDone ? 'line-through' : 'none'};">${escapeHTML(s.title)}</span>
                   </div>
-                  <span style="font-size: 14px; color: ${isDone ? '#9CA3AF' : '#111827'}; text-decoration: ${isDone ? 'line-through' : 'none'};">${escapeHTML(s.title)}</span>
-                </div>
-              `;
-            }).join('') : `<p style="font-size: 13px; color: #6B7280;">No subtasks.</p>`}
+                `;
+              }).join('') : `<div style="font-size: 14px; color: var(--text-secondary);">No subtasks defined.</div>`}
+            </div>
           </div>
         </div>
 
         <!-- Fixed Bottom Button -->
-        ${!isCompleted ? `
-          <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 16px 24px; background: linear-gradient(to top, rgba(255,255,255,1) 80%, rgba(255,255,255,0)); border-radius: 0 0 32px 32px;">
-            <button id="mobile-mark-complete-btn" style="width: 100%; background: #3B82F6; color: white; padding: 16px; border: none; border-radius: 100px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(59,130,246,0.3);">
-              Mark as Complete
-            </button>
+        ${(!isCompleted || isCreator) ? `
+          <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 16px 24px; background: var(--bg-primary); border-top: 1px solid var(--border-neutral); border-radius: 0 0 32px 32px; display: flex; gap: 12px; box-shadow: 0 -4px 12px rgba(0,0,0,0.05); z-index: 10;">
+            ${!isCompleted ? `
+              <button id="mobile-mark-complete-btn" style="flex: 1; background: #3B82F6; color: white; padding: 14px 20px; border: none; border-radius: 100px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(59,130,246,0.3);">
+                Mark as Complete
+              </button>
+            ` : ''}
+            ${isCreator ? `
+              <button id="mobile-delete-task-btn" style="flex: 1; background: transparent; border: 2px solid var(--status-danger); color: var(--status-danger); padding: 14px 20px; border-radius: 100px; font-size: 15px; font-weight: 700; cursor: pointer;">
+                Delete Task
+              </button>
+            ` : ''}
           </div>
         ` : ''}
       </div>
@@ -564,7 +699,7 @@ async function loadTaskDetails(id) {
         mobilePanel.style.transform = 'translateY(0)';
       }
     }, 10);
-    
+
     setupDetailListeners(t);
   } catch (err) {
     console.error(err);
@@ -609,6 +744,37 @@ function setupDetailListeners(t) {
     }
   });
 
+  const deleteTask = async () => {
+    if (!confirm('Are you sure you want to permanently delete this task? All dependencies, assignments, comments, and subtasks will be lost.')) {
+      return;
+    }
+    try {
+      await fetchApi('DELETE', `/tasks/${t.id}`);
+      Notifications.success('Task Deleted', 'Task was deleted successfully.');
+      
+      // Clear details panel
+      const detailsContainer = document.getElementById('task-details-container');
+      if (detailsContainer) {
+        detailsContainer.innerHTML = `
+          <div style="padding: 32px; text-align: center; color: var(--text-secondary); margin: auto;">
+            Select a task item to view full operational details.
+          </div>
+        `;
+      }
+      
+      // Close mobile details view if open
+      document.getElementById('tasks-workspace-container')?.classList.remove('task-selected');
+
+      // Refresh lists
+      await loadTasks();
+    } catch (e) {
+      Notifications.error('Deletion Failed', e.message);
+    }
+  };
+
+  document.getElementById('delete-task-btn')?.addEventListener('click', deleteTask);
+  document.getElementById('mobile-delete-task-btn')?.addEventListener('click', deleteTask);
+
   // 1. Status Update selector
   const statusSelect = document.getElementById('task-status-update');
   statusSelect?.addEventListener('change', async () => {
@@ -624,7 +790,7 @@ function setupDetailListeners(t) {
     }
   });
 
-  // 2. Subtasks Checkboxes
+  // 2. Subtasks Checkboxes (Desktop)
   document.querySelectorAll('.subtask-chk').forEach(chk => {
     chk.addEventListener('change', async () => {
       const sid = Number(chk.dataset.sid);
@@ -637,6 +803,22 @@ function setupDetailListeners(t) {
       } catch (err) {
         Notifications.error('Update Failed', err.message);
         chk.checked = !isChecked; // restore
+      }
+    });
+  });
+
+  // 2b. Subtasks Checkboxes (Mobile)
+  document.querySelectorAll('.mobile-subtask-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const sid = Number(btn.dataset.sid);
+      const isDone = btn.dataset.done === 'true';
+      const val = isDone ? 'Pending' : 'Completed';
+      try {
+        await fetchApi('PATCH', `/tasks/${t.id}/subtasks/${sid}`, { status: val });
+        Notifications.success('Subtask Updated', `Subtask marked as ${val}.`);
+        await loadTaskDetails(t.id);
+      } catch (err) {
+        Notifications.error('Update Failed', err.message);
       }
     });
   });

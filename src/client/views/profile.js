@@ -43,6 +43,17 @@ export function renderProfileView() {
         </div>
       </div>
 
+      <!-- Password Reset (Only visible to self) -->
+      <div id="profile-security-widget" class="widget-card" style="display: none; flex-direction: column; gap: 16px; max-width: 500px;">
+        <h3 class="card-title">Security Settings</h3>
+        <p class="body-text" style="font-size: 13px; margin-top: -8px;">Update your account password. Requires at least 8 characters.</p>
+        <form id="profile-password-form" style="display: flex; flex-direction: column; gap: 12px;">
+          <input type="password" id="profile-new-password" placeholder="New Password" required minlength="8" style="padding: 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); outline: none;" />
+          <input type="password" id="profile-confirm-password" placeholder="Confirm Password" required minlength="8" style="padding: 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); outline: none;" />
+          <button type="submit" class="btn btn-primary" style="align-self: flex-start; padding: 10px 24px;">Change Password</button>
+        </form>
+      </div>
+
       <!-- Task History and Performance Matrix -->
       <div class="widget-card" style="display: flex; flex-direction: column; gap: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
@@ -145,9 +156,10 @@ export async function initProfileListeners() {
               targetUserId: userId
             });
             Notifications.success('Avatar Updated', 'Profile picture updated successfully.');
-            avatarImg.src = res.avatarUrl;
+            avatarImg.src = `${res.avatarUrl}?t=${Date.now()}`;
             avatarImg.style.display = 'block';
             avatarFallback.style.display = 'none';
+            document.dispatchEvent(new CustomEvent('tascorr_avatar_updated'));
           } catch (err) {
             console.error(err);
             Notifications.error('Upload Failed', err.message);
@@ -157,6 +169,44 @@ export async function initProfileListeners() {
         };
         reader.readAsDataURL(file);
       });
+    }
+
+    // Show password reset if viewing own profile
+    const securityWidget = document.getElementById('profile-security-widget');
+    if (userId === AuthState.currentUser?.id) {
+      if (securityWidget) securityWidget.style.display = 'flex';
+      
+      const pwdForm = document.getElementById('profile-password-form');
+      if (pwdForm) {
+        pwdForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const p1 = document.getElementById('profile-new-password').value;
+          const p2 = document.getElementById('profile-confirm-password').value;
+          
+          if (p1 !== p2) {
+            return Notifications.error('Password Mismatch', 'The new passwords do not match.');
+          }
+          if (p1.length < 8) {
+            return Notifications.error('Invalid Password', 'Password must be at least 8 characters long.');
+          }
+          
+          const btn = pwdForm.querySelector('button');
+          const originalText = btn.innerText;
+          try {
+            btn.disabled = true;
+            btn.innerText = 'Updating...';
+            await fetchApi('PATCH', `/users/${userId}`, { password: p1 });
+            Notifications.success('Password Updated', 'Your password has been changed successfully.');
+            pwdForm.reset();
+          } catch (err) {
+            console.error(err);
+            Notifications.error('Update Failed', err.message);
+          } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+          }
+        });
+      }
     }
 
     renderTasksTable('week');
@@ -224,7 +274,6 @@ function renderTasksTable(range) {
       <tr style="border-bottom: 1px solid var(--border-neutral);">
         <td style="padding: 12px; font-weight:600;">
           <div style="font-size:13px; color:var(--text-primary);">${t.title}</div>
-          <div class="small-text" style="font-size:10px; margin-top:2px;">#${t.id}</div>
         </td>
         <td style="padding: 12px;">
           <span class="pill-badge status-info" style="font-size:10px; padding:2px 6px;">${t.priority}</span>

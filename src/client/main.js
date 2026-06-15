@@ -12,9 +12,12 @@ import { renderLandingView } from './views/landing.js';
 import { renderSuperadminView, initSuperadminListeners } from './views/superadmin.js';
 import { renderLoginView, initLoginListeners } from './views/login.js';
 import { renderSignupView, initSignupListeners } from './views/signup.js';
+import { TaskCreateDrawer } from './views/task-create-modal.js';
 
 import { AuthState } from './services/auth-state.js';
 import { Notifications } from './services/notifications.js';
+import { initDB, getPendingOperations, removeOperation, getPendingCount } from './services/offline-db.js';
+import { fetchApi, refreshPendingBadge } from './services/api.js';
 
 // 1. Navigation definitions
 const ROUTES = {
@@ -118,9 +121,16 @@ function initNavigation() {
     AuthState.logout();
   });
 
-  // Build Mobile Bottom Navigation (four priority items + center quick action)
+  // Build Mobile Bottom Navigation (priority items + center quick action)
   if (!isSuper) {
-    const mobileKeys = ['dashboard', 'tasks', 'quickAction', 'settings', 'logout'];
+    const slaAccessLevel = AuthState.currentUser?.tenant?.slaAccessLevel ?? 3;
+    const canSeeReports = rank <= slaAccessLevel;
+
+    // Build nav keys based on user access — reports replaces the empty space when accessible
+    const mobileKeys = canSeeReports
+      ? ['dashboard', 'tasks', 'quickAction', 'reports', 'settings']
+      : ['dashboard', 'tasks', 'quickAction', 'settings', 'logout'];
+
     let mobileHtml = '';
 
     mobileKeys.forEach(key => {
@@ -394,7 +404,7 @@ function updateUserHeaderBadge() {
       const initials = `${user.firstName ? user.firstName.charAt(0) : ''}${user.lastName ? user.lastName.charAt(0) : ''}`;
       mobileAvatar.innerHTML = `
         <img src="/avatars/user-${user.id}.jpg?t=${Date.now()}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" />
-        <div style="width:40px;height:40px;border-radius:50%;background:#F3F4F6;color:#111827;display:none;align-items:center;justify-content:center;font-weight:700;font-size:14px;border:1px solid #E5E7EB;">${initials || '?'}</div>
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--sidebar-bg);color:var(--text-primary);display:none;align-items:center;justify-content:center;font-weight:700;font-size:14px;border:1px solid #E5E7EB;">${initials || '?'}</div>
       `;
     }
   }
@@ -428,8 +438,195 @@ function updateUserHeaderBadge() {
       nameLabel.innerText = `${user.firstName} ${user.lastName}`;
       roleLabel.innerText = user.rankTitle || 'Employee';
       userCard.style.display = 'flex';
+      
+      // Tapping the mobile avatar opens a mini profile bottom sheet
+      if (mobileAvatar) {
+        mobileAvatar.onclick = () => {
+          // Remove existing sheet if any
+          document.getElementById('mobile-profile-sheet')?.remove();
+          document.getElementById('mobile-profile-overlay')?.remove();
+
+          const overlay = document.createElement('div');
+          overlay.id = 'mobile-profile-overlay';
+          overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1100;backdrop-filter:blur(2px);`;
+
+          const sheet = document.createElement('div');
+          sheet.id = 'mobile-profile-sheet';
+          sheet.style.cssText = `
+            position:fixed; left:0; right:0; bottom:0; z-index:1101;
+            background:var(--bg-primary); border-radius:28px 28px 0 0;
+            padding:0 0 32px 0; box-shadow:0 -8px 40px rgba(0,0,0,0.15);
+            transform:translateY(100%); transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);
+          `;
+
+          const dept = user.departmentName || user.department?.name || 'Unassigned';
+          const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`;
+
+          sheet.innerHTML = `
+            <!-- Drag handle -->
+            <div style="width:40px;height:4px;background:#E5E7EB;border-radius:2px;margin:12px auto 20px auto;"></div>
+
+            <!-- User card -->
+            <div style="display:flex;align-items:center;gap:16px;padding:0 24px 20px;border-bottom:1px solid var(--border-neutral);">
+              <div style="position:relative;width:60px;height:60px;flex-shrink:0;">
+                <img src="/avatars/user-${user.id}.jpg?t=${Date.now()}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--border-neutral);" />
+                <div style="width:60px;height:60px;border-radius:50%;background:var(--accent-navy-light);color:var(--accent-navy-primary);display:none;align-items:center;justify-content:center;font-weight:700;font-size:22px;">${initials || '?'}</div>
+              </div>
+              <div>
+                <div style="font-size:18px;font-weight:700;color:var(--text-primary);">${user.firstName} ${user.lastName}</div>
+                <div style="font-size:13px;color:var(--accent-navy-primary);font-weight:600;margin-top:2px;">${user.rankTitle || 'Employee'}</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${dept}</div>
+              </div>
+            </div>
+
+            <!-- Email row -->
+            <div style="padding:16px 24px;border-bottom:1px solid var(--border-neutral);display:flex;align-items:center;gap:12px;">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:18px;height:18px;color:var(--text-secondary);flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
+              <span style="font-size:14px;color:var(--text-secondary);">${user.email || '--'}</span>
+            </div>
+
+            <!-- View full profile -->
+            <div id="mobile-sheet-profile-link" style="padding:16px 24px;border-bottom:1px solid var(--border-neutral);display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:18px;height:18px;color:var(--text-secondary);"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                <span style="font-size:14px;font-weight:600;color:var(--text-primary);">View Full Profile</span>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;color:var(--text-secondary);"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+            </div>
+
+            <!-- Sign out -->
+            <div id="mobile-sheet-signout" style="padding:16px 24px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:18px;height:18px;color:var(--status-danger);"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>
+              <span style="font-size:14px;font-weight:600;color:var(--status-danger);">Sign Out</span>
+            </div>
+          `;
+
+          document.body.appendChild(overlay);
+          document.body.appendChild(sheet);
+
+          // Animate in
+          requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; });
+
+          const close = () => {
+            sheet.style.transform = 'translateY(100%)';
+            overlay.style.opacity = '0';
+            setTimeout(() => { sheet.remove(); overlay.remove(); }, 300);
+          };
+
+          overlay.addEventListener('click', close);
+          sheet.querySelector('#mobile-sheet-profile-link').addEventListener('click', () => {
+            close();
+            setTimeout(() => { window.location.hash = 'profile'; }, 300);
+          });
+          sheet.querySelector('#mobile-sheet-signout').addEventListener('click', () => {
+            close();
+            setTimeout(() => AuthState.logout(), 300);
+          });
+        };
+      }
+      userCard.onclick = () => {
+        window.location.hash = 'profile';
+        // Auto-close sidebar on mobile if open
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('active')) {
+          sidebar.classList.remove('active');
+        }
+      };
     } else {
       userCard.style.display = 'none';
+    }
+  }
+}
+
+// ── Phase 4 & 5: Background Sync with Conflict Resolution ────────────────────
+/**
+ * Replays all queued offline mutations to the server in order.
+ * Phase 5 additions:
+ *  - 409 Conflict → "last write wins": discard local op, keep server state
+ *  - 403/404 permanent failures → surface a dismissible alert to the user
+ *  - Toast notification on completion
+ *  - All other errors → leave in queue for next retry
+ */
+async function syncPendingOperations() {
+  const pending = await getPendingOperations();
+  if (pending.length === 0) return;
+
+  console.log(`[Sync] Replaying ${pending.length} queued operation(s)...`);
+
+  // Show syncing progress in the banner
+  const banner = document.getElementById('offline-banner');
+  const bannerText = document.getElementById('offline-banner-text');
+  if (banner && bannerText) {
+    banner.style.display = 'flex';
+    banner.style.background = '#2563EB';
+    bannerText.textContent = `Syncing ${pending.length} pending change${pending.length > 1 ? 's' : ''}...`;
+    document.getElementById('app-layout').style.marginTop = banner.offsetHeight + 'px';
+  }
+
+  let successCount = 0;
+  const permanentlyFailed = []; // ops that can never succeed (auth, not-found, conflict discarded)
+
+  for (const op of pending) {
+    try {
+      await fetchApi(op.method, op.path, op.body);
+      await removeOperation(op.id);
+      successCount++;
+    } catch (err) {
+      const status = err?.status;
+
+      if (status === 409) {
+        // ── Conflict: last write wins — discard local op, server wins ──────
+        console.warn(`[Sync] Conflict on op #${op.id} (${op.method} ${op.path}). Discarding local change.`);
+        await removeOperation(op.id);
+        permanentlyFailed.push({ op, reason: 'Conflict — a newer version exists on the server. Your local change was discarded.' });
+
+      } else if (status === 403 || status === 404) {
+        // ── Permanent failure: resource gone or permission revoked ──────────
+        console.warn(`[Sync] Permanent failure on op #${op.id} (${status}). Removing from queue.`);
+        await removeOperation(op.id);
+        permanentlyFailed.push({ op, reason: status === 403 ? 'Permission denied — you may no longer have access.' : 'Resource not found — it may have been deleted.' });
+
+      } else {
+        // ── Transient failure (network hiccup, 5xx): leave in queue ────────
+        console.warn(`[Sync] Transient failure on op #${op.id} (${op.method} ${op.path}):`, err.message);
+      }
+    }
+  }
+
+  await refreshPendingBadge();
+
+  // Hide the banner
+  if (banner) {
+    banner.style.display = 'none';
+    document.getElementById('app-layout').style.marginTop = '0';
+  }
+
+  // ── Toast notification for successfully synced changes ─────────────────────
+  if (successCount > 0) {
+    Notifications.success(
+      'Changes Synced',
+      `${successCount} offline change${successCount > 1 ? 's' : ''} saved to the server successfully.`,
+      5000
+    );
+  }
+
+  // ── Dismissible alert for permanently failed ops ────────────────────────────
+  if (permanentlyFailed.length > 0) {
+    const details = permanentlyFailed
+      .map(f => `• ${f.op.method} ${f.op.path}: ${f.reason}`)
+      .join('\n');
+    Notifications.error(
+      `${permanentlyFailed.length} Change${permanentlyFailed.length > 1 ? 's' : ''} Could Not Sync`,
+      details,
+      0  // 0 = stays until manually dismissed
+    );
+  }
+
+  // ── Refresh the current view with fresh server data ─────────────────────────
+  if (successCount > 0 || permanentlyFailed.length > 0) {
+    const currentHash = window.location.hash.substring(1);
+    if (['dashboard', 'tasks'].includes(currentHash)) {
+      router();
     }
   }
 }
@@ -449,10 +646,29 @@ window.addEventListener('unhandledrejection', (event) => {
 document.addEventListener('DOMContentLoaded', async () => {
   // 1. Session verification check
   await AuthState.checkSession();
-  
-  // 2. Initialize layouts
+
+  // 2. Initialize IndexedDB for offline queue (Phase 3 & 4)
+  try {
+    await initDB();
+    await refreshPendingBadge();
+  } catch (err) {
+    console.warn('[OfflineDB] Could not initialize offline database:', err);
+  }
+
+  // 3. Wire up background sync when coming back online (Phase 4)
+  window.addEventListener('online', async () => {
+    if (AuthState.isAuthenticated) {
+      await syncPendingOperations();
+    }
+  });
+
+  // 4. Initialize layouts
   initLayout();
   initNavigation();
+
+  document.addEventListener('tascorr_avatar_updated', () => {
+    updateUserHeaderBadge();
+  });
 
   window.addEventListener('hashchange', () => {
     initNavigation();

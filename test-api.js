@@ -1,22 +1,27 @@
-const { PrismaClient } = require('@prisma/client');
-const jwt = require('jsonwebtoken');
-const prisma = new PrismaClient();
+const http = require('http');
 
-async function run() {
-  const user = await prisma.user.findFirst();
-  if (!user) return console.log("No users found");
+async function test() {
+  // 1. Login
+  const loginData = JSON.stringify({ email: 'ceo@tascorr.com', password: 'password123' }); // Try standard seed credentials
   
-  const token = jwt.sign(
-    { userId: user.id, email: user.email, tenantId: user.tenantId, rankLevel: 1, departmentId: user.departmentId },
-    process.env.JWT_SECRET || 'tascorr-insecure-dev-secret-key-39281',
-    { expiresIn: '1h' }
-  );
-
-  const res = await fetch('http://localhost:5005/api/tasks', {
-    headers: { 'Authorization': `Bearer ${token}` }
+  const loginReq = http.request({
+    hostname: 'localhost', port: 3000, path: '/api/auth/login', method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': loginData.length }
+  }, (res) => {
+    const cookie = res.headers['set-cookie'] ? res.headers['set-cookie'][0].split(';')[0] : '';
+    
+    // 2. Fetch Tasks
+    const taskReq = http.request({
+      hostname: 'localhost', port: 3000, path: '/api/tasks/1', method: 'GET',
+      headers: { 'Cookie': cookie }
+    }, (taskRes) => {
+      let data = '';
+      taskRes.on('data', c => data += c);
+      taskRes.on('end', () => console.log("Task 1:", data.substring(0, 500) + "..."));
+    });
+    taskReq.end();
   });
-  const data = await res.json();
-  console.log(JSON.stringify(data, null, 2));
+  loginReq.write(loginData);
+  loginReq.end();
 }
-
-run().finally(() => prisma.$disconnect());
+test();
