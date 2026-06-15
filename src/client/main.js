@@ -373,25 +373,28 @@ function updateUserHeaderBadge() {
     }
   }
 
-  // Update brand logo and text in sidebar
+  // Update brand logo and text in sidebar to default Tascorr logo
   const brandLogo = document.getElementById('brand-logo');
   const sidebarBrand = document.querySelector('.sidebar-brand');
-  if (AuthState.isAuthenticated && AuthState.currentUser) {
-    if (brandLogo) {
-      const tenantLogoUrl = AuthState.currentUser.tenantLogoUrl;
-      brandLogo.src = tenantLogoUrl ? `${tenantLogoUrl}?t=${Date.now()}` : '/tascorrLogo.png';
-      brandLogo.style.display = 'block';
-    }
-    if (sidebarBrand) {
-      sidebarBrand.innerText = AuthState.currentUser.tenantName || 'Tascorr';
+  if (brandLogo) {
+    brandLogo.src = '/tascorrLogo.png';
+    brandLogo.style.display = 'block';
+  }
+  if (sidebarBrand) {
+    sidebarBrand.innerText = 'Tascorr';
+  }
+
+  // Update company logo in header next to company name (right top corner)
+  const headerLogoContainer = document.getElementById('header-company-logo-container');
+  const headerLogoImg = document.getElementById('header-company-logo-img');
+  if (AuthState.isAuthenticated && AuthState.currentUser && AuthState.currentUser.tenantLogoUrl) {
+    if (headerLogoImg && headerLogoContainer) {
+      headerLogoImg.src = `${AuthState.currentUser.tenantLogoUrl}?t=${Date.now()}`;
+      headerLogoContainer.style.display = 'flex';
     }
   } else {
-    if (brandLogo) {
-      brandLogo.src = '/tascorrLogo.png';
-      brandLogo.style.display = 'block';
-    }
-    if (sidebarBrand) {
-      sidebarBrand.innerText = 'Tascorr';
+    if (headerLogoContainer) {
+      headerLogoContainer.style.display = 'none';
     }
   }
 

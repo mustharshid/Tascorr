@@ -213,4 +213,87 @@ router.get('/tenants', auth_middleware_js_1.authenticateSession, auth_middleware
         return res.status(500).json({ error: `Tenant list retrieval error: ${error.message}` });
     }
 });
+/**
+ * PATCH /api/superadmin/tenants/:tenantId/subscription
+ * Change subscription tier for a company (Superadmin only)
+ */
+router.patch('/tenants/:tenantId/subscription', auth_middleware_js_1.authenticateSession, auth_middleware_js_1.requireSuperadmin, async (req, res) => {
+    const tenantId = Number(req.params.tenantId);
+    const { subscriptionTier } = req.body;
+    if (isNaN(tenantId)) {
+        return res.status(400).json({ error: 'Invalid tenant ID.' });
+    }
+    const tier = Number(subscriptionTier);
+    if (![1, 2, 3].includes(tier)) {
+        return res.status(400).json({ error: 'Subscription tier must be 1, 2, or 3.' });
+    }
+    try {
+        const updated = await db_js_1.default.tenant.update({
+            where: { id: tenantId },
+            data: { subscriptionTier: tier }
+        });
+        // Write audit log
+        await db_js_1.default.auditLog.create({
+            data: {
+                tenantId: 0,
+                actorId: req.user.userId,
+                action: 'TENANT_TIER_UPDATE',
+                entityType: 'Tenant',
+                entityId: tenantId,
+                metadata: JSON.stringify({ subscriptionTier: tier }),
+            },
+        });
+        return res.status(200).json({ message: 'Subscription tier updated successfully.', tenant: updated });
+    }
+    catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+});
+/**
+ * POST /api/superadmin/tenants/:tenantId/reset-admin-password
+ * Reset company administrator's password (Superadmin only)
+ */
+router.post('/tenants/:tenantId/reset-admin-password', auth_middleware_js_1.authenticateSession, auth_middleware_js_1.requireSuperadmin, async (req, res) => {
+    const tenantId = Number(req.params.tenantId);
+    const { newPassword } = req.body;
+    if (isNaN(tenantId)) {
+        return res.status(400).json({ error: 'Invalid tenant ID.' });
+    }
+    if (!newPassword || newPassword.length < 12 || !/[a-z]/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^a-zA-Z0-9]/.test(newPassword)) {
+        return res.status(400).json({ error: 'Password must be at least 12 characters long and contain uppercase, lowercase, numbers, and symbols.' });
+    }
+    try {
+        // Find the company administrator (rank level 0) for this tenant
+        const adminUser = await db_js_1.default.user.findFirst({
+            where: {
+                tenantId,
+                rank: { level: 0 },
+                deletedAt: null
+            }
+        });
+        if (!adminUser) {
+            return res.status(404).json({ error: 'Company administrator not found for this organization.' });
+        }
+        const passwordHash = await bcryptjs_1.default.hash(newPassword, 12);
+        await db_js_1.default.user.update({
+            where: { id: adminUser.id },
+            data: { passwordHash }
+        });
+        // Write audit log
+        await db_js_1.default.auditLog.create({
+            data: {
+                tenantId: 0,
+                actorId: req.user.userId,
+                action: 'TENANT_ADMIN_PASSWORD_RESET',
+                entityType: 'User',
+                entityId: adminUser.id,
+                metadata: JSON.stringify({ adminUserId: adminUser.id }),
+            },
+        });
+        return res.status(200).json({ message: 'Company administrator password updated successfully.' });
+    }
+    catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+});
 exports.default = router;

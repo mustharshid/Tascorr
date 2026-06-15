@@ -357,9 +357,13 @@ export function initSettingsListeners() {
           }
           if (logoFallback) logoFallback.style.display = 'none';
           
-          // Optionally update the logo in the sidebar dynamically
-          const sidebarLogo = document.getElementById('brand-logo');
-          if (sidebarLogo) sidebarLogo.src = res.logoUrl;
+          // Optionally update the logo in the header dynamically
+          const headerLogoImg = document.getElementById('header-company-logo-img');
+          const headerLogoContainer = document.getElementById('header-company-logo-container');
+          if (headerLogoImg && headerLogoContainer) {
+            headerLogoImg.src = res.logoUrl;
+            headerLogoContainer.style.display = 'flex';
+          }
           
         } catch (err) {
           console.error(err);

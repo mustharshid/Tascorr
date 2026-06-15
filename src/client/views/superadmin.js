@@ -102,11 +102,12 @@ export function renderSuperadminView() {
                     <th style="padding: 12px; font-weight:600;">Registered At</th>
                     <th style="padding: 12px; font-weight:600;">Staff Count</th>
                     <th style="padding: 12px; font-weight:600;">Tasks Created</th>
+                    <th style="padding: 12px; font-weight:600;">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="registered-companies-body">
                   <tr>
-                    <td colspan="5" style="padding: 24px; text-align: center; color: var(--text-secondary);">Loading registered organizations...</td>
+                    <td colspan="6" style="padding: 24px; text-align: center; color: var(--text-secondary);">Loading registered organizations...</td>
                   </tr>
                 </tbody>
               </table>
@@ -394,7 +395,7 @@ async function loadRegisteredCompanies() {
     const companies = data.tenants || [];
 
     if (companies.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="padding: 24px; text-align: center; color: var(--text-secondary);">No organizations registered on the platform yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--text-secondary);">No organizations registered on the platform yet.</td></tr>`;
       return;
     }
 
@@ -403,15 +404,70 @@ async function loadRegisteredCompanies() {
       return `
         <tr style="border-bottom: 1px solid var(--border-neutral);">
           <td style="padding: 12px; font-weight:600; color: var(--text-primary);">${escapeHTML(c.name)}</td>
-          <td style="padding: 12px;"><span class="pill-badge status-info" style="font-size:11px;">Tier ${c.subscriptionTier}</span></td>
+          <td style="padding: 12px;">
+            <select class="tenant-tier-select" data-tenant-id="${c.id}" style="padding: 4px 8px; border:1px solid var(--border-neutral); border-radius:var(--radius-sm); background:var(--bg-secondary); color:var(--text-primary); font-size:11px;">
+              <option value="1" ${c.subscriptionTier === 1 ? 'selected' : ''}>Tier 1 (Startup)</option>
+              <option value="2" ${c.subscriptionTier === 2 ? 'selected' : ''}>Tier 2 (Growth)</option>
+              <option value="3" ${c.subscriptionTier === 3 ? 'selected' : ''}>Tier 3 (Enterprise)</option>
+            </select>
+          </td>
           <td style="padding: 12px; color: var(--text-secondary);">${registeredDate}</td>
           <td style="padding: 12px; font-weight:600;">${c.staffCount}</td>
           <td style="padding: 12px; font-weight:600;">${c.tasksCount}</td>
+          <td style="padding: 12px;">
+            <button class="btn btn-secondary reset-admin-password-btn" data-tenant-id="${c.id}" data-tenant-name="${escapeHTML(c.name)}" style="padding: 4px 8px; font-size: 11px; height: auto;">Reset Admin Pwd</button>
+          </td>
         </tr>
       `;
     }).join('');
+
+    // Attach event listeners for change tier
+    tbody.querySelectorAll('.tenant-tier-select').forEach(select => {
+      select.addEventListener('change', async (e) => {
+        const tenantId = Number(select.dataset.tenantId);
+        const newTier = Number(e.target.value);
+        try {
+          await fetchApi('PATCH', `/superadmin/tenants/${tenantId}/subscription`, {
+            subscriptionTier: newTier
+          });
+          Notifications.success('Tier Updated', 'Tenant subscription level updated successfully.');
+          await loadRegisteredCompanies();
+        } catch (err) {
+          Notifications.error('Update Failed', err.message);
+          await loadRegisteredCompanies();
+        }
+      });
+    });
+
+    // Attach event listeners for reset password
+    tbody.querySelectorAll('.reset-admin-password-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const tenantId = Number(btn.dataset.tenantId);
+        const tenantName = btn.dataset.tenantName;
+        const password = prompt(`Enter new administrator password for "${tenantName}" (minimum 12 characters, must include mixed cases, numbers, and symbols):`);
+        if (password === null) return; // user cancelled
+
+        if (password.length < 12 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password) || !/[^a-zA-Z0-9]/.test(password)) {
+          Notifications.error('Invalid Password', 'Password does not meet security requirements.');
+          return;
+        }
+
+        try {
+          btn.disabled = true;
+          await fetchApi('POST', `/superadmin/tenants/${tenantId}/reset-admin-password`, {
+            newPassword: password
+          });
+          Notifications.success('Password Updated', `Successfully updated administrator credentials for "${tenantName}".`);
+        } catch (err) {
+          Notifications.error('Reset Failed', err.message);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+
   } catch (err) {
     console.error(err);
-    tbody.innerHTML = `<tr><td colspan="5" style="padding: 24px; text-align: center; color: var(--status-danger);">Failed to load organizations: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--status-danger);">Failed to load organizations: ${err.message}</td></tr>`;
   }
 }
