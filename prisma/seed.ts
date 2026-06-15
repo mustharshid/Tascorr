@@ -1,4 +1,4 @@
-//superadmin@tascorr.com	Superadmin123!	Global Superadmin
+//superadmin@tascorr.com	Qwertyuiop!@12	Global Superadmin
 //admin@company.com	CompanyAdmin123!	Company Administrator
 //head@company.com	CompanyAdmin123!	VP / Department Head
 //employee@company.com	CompanyAdmin123!	Employee
@@ -26,7 +26,7 @@ async function main() {
 
   // 2. Create Global Superadmin (tenantId = 0, rank title = Global Superadmin)
   const superadminEmail = 'superadmin@tascorr.com';
-  const superadminHash = await bcrypt.hash('Superadmin123!', 12);
+  const superadminHash = await bcrypt.hash('Qwertyuiop!@12', 12);
 
   // We need a Tenant 0 representation for global scope relationships
   const globalTenant = await prisma.tenant.upsert({

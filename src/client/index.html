@@ -10,7 +10,7 @@
   <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
   <link rel="icon" href="favicon-16.png" type="image/png" sizes="16x16">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2563EB">
   <link rel="stylesheet" href="./styles/design-system.css">
   <link rel="stylesheet" href="/styles/landing-v2.css">
@@ -120,7 +120,8 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         const swPath = (document.querySelector('base')?.href || '/').replace(/\/$/, '') + '/service-worker.js';
-        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+        const swScope = (document.querySelector('base')?.href || '/');
+        navigator.serviceWorker.register(swPath, { scope: swScope })
           .then(reg => console.log('[SW] Registered, scope:', reg.scope))
           .catch(err => console.warn('[SW] Registration failed:', err));
       });

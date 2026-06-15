@@ -13,8 +13,8 @@ const CACHE_VERSION = 'tascorr-v1';
 
 // Static assets to pre-cache on install
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
+  './',
+  'index.html',
 ];
 
 // API endpoints whose GET responses should be cached for offline use
@@ -65,12 +65,13 @@ self.addEventListener('fetch', (event) => {
   // Only handle same-origin requests
   if (url.origin !== self.location.origin) return;
 
-  // ── API Requests ──────────────────────────────────────────────────────────
-  if (url.pathname.startsWith('/api/')) {
+  const apiIndex = url.pathname.indexOf('/api/');
+  if (apiIndex !== -1) {
+    const apiPath = url.pathname.substring(apiIndex);
     // Only cache GET requests; let mutations (POST/PATCH/DELETE) pass through
     if (request.method === 'GET') {
       const isCacheable = CACHEABLE_API_PATHS.some((p) =>
-        url.pathname.startsWith(p)
+        apiPath.startsWith(p)
       );
 
       if (isCacheable) {

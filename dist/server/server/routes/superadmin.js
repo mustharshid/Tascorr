@@ -115,16 +115,102 @@ router.post('/tenants', auth_middleware_js_1.authenticateSession, auth_middlewar
  */
 router.get('/audit-logs', auth_middleware_js_1.authenticateSession, auth_middleware_js_1.requireSuperadmin, async (req, res) => {
     try {
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 100;
+        const actor = req.query.actor ? String(req.query.actor).trim() : '';
+        const action = req.query.action ? String(req.query.action).trim() : '';
+        const company = req.query.company ? String(req.query.company).trim() : '';
+        const startDate = req.query.startDate ? String(req.query.startDate).trim() : '';
+        const endDate = req.query.endDate ? String(req.query.endDate).trim() : '';
+        const sortOrder = req.query.sortOrder === 'asc' ? 'asc' : 'desc';
+        const where = {};
+        if (actor) {
+            where.actor = {
+                email: {
+                    contains: actor
+                }
+            };
+        }
+        if (action) {
+            where.action = {
+                contains: action
+            };
+        }
+        if (company) {
+            where.tenant = {
+                name: {
+                    contains: company
+                }
+            };
+        }
+        if (startDate || endDate) {
+            where.createdAt = {};
+            if (startDate) {
+                where.createdAt.gte = new Date(startDate);
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                if (endDate.length <= 10) {
+                    end.setHours(23, 59, 59, 999);
+                }
+                where.createdAt.lte = end;
+            }
+        }
+        const total = await db_js_1.default.auditLog.count({ where });
         const logs = await db_js_1.default.auditLog.findMany({
+            where,
             include: {
                 actor: { select: { email: true } },
+                tenant: { select: { name: true } },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: sortOrder },
+            skip: (page - 1) * limit,
+            take: limit,
         });
-        return res.status(200).json({ logs });
+        const totalPages = Math.ceil(total / limit);
+        return res.status(200).json({
+            logs,
+            total,
+            page,
+            totalPages,
+        });
     }
     catch (error) {
         return res.status(500).json({ error: `Audit log retrieval error: ${error.message}` });
+    }
+});
+/**
+ * GET /api/superadmin/tenants
+ * Retrieve list of all registered tenants/companies with staff and task counts.
+ */
+router.get('/tenants', auth_middleware_js_1.authenticateSession, auth_middleware_js_1.requireSuperadmin, async (req, res) => {
+    try {
+        const tenantsList = await db_js_1.default.tenant.findMany({
+            where: {
+                id: { not: 0 } // Exclude global system tenant
+            },
+            include: {
+                _count: {
+                    select: {
+                        users: { where: { deletedAt: null } },
+                        tasks: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        const formattedTenants = tenantsList.map(t => ({
+            id: t.id,
+            name: t.name,
+            subscriptionTier: t.subscriptionTier,
+            createdAt: t.createdAt,
+            staffCount: t._count.users,
+            tasksCount: t._count.tasks
+        }));
+        return res.status(200).json({ tenants: formattedTenants });
+    }
+    catch (error) {
+        return res.status(500).json({ error: `Tenant list retrieval error: ${error.message}` });
     }
 });
 exports.default = router;
