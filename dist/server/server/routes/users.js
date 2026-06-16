@@ -394,7 +394,7 @@ router.get('/tenant/details', auth_middleware_js_1.authenticateSession, auth_mid
     try {
         const tenant = await db_js_1.default.tenant.findUnique({
             where: { id: tenantId },
-            select: { id: true, name: true, logoUrl: true, subscriptionTier: true, status: true, allowCrossDeptPeerAssignment: true, slaAccessLevel: true }
+            select: { id: true, name: true, logoUrl: true, subscriptionTier: true, status: true, allowCrossDeptPeerAssignment: true, slaAccessLevel: true, supportAccessGrantedUntil: true }
         });
         return res.status(200).json({ tenant });
     }
@@ -439,6 +439,50 @@ router.patch('/tenant/details', auth_middleware_js_1.authenticateSession, auth_m
             },
         });
         return res.status(200).json({ message: 'Company details updated successfully.', tenant: updated });
+    }
+    catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+});
+/**
+ * POST /api/users/tenant/support-access
+ * Grant or revoke support access for the active tenant (Admin only)
+ */
+router.post('/tenant/support-access', auth_middleware_js_1.authenticateSession, auth_middleware_js_1.requireAdmin, async (req, res) => {
+    const tenantId = req.user.tenantId;
+    const { hours } = req.body;
+    if (hours === undefined) {
+        return res.status(400).json({ error: 'Duration in hours is required.' });
+    }
+    const durationHours = Number(hours);
+    if (isNaN(durationHours) || durationHours < 0) {
+        return res.status(400).json({ error: 'Invalid duration hours.' });
+    }
+    try {
+        let supportAccessGrantedUntil = null;
+        if (durationHours > 0) {
+            supportAccessGrantedUntil = new Date();
+            supportAccessGrantedUntil.setTime(supportAccessGrantedUntil.getTime() + durationHours * 60 * 60 * 1000);
+        }
+        const updated = await db_js_1.default.tenant.update({
+            where: { id: tenantId },
+            data: { supportAccessGrantedUntil }
+        });
+        // Write audit log
+        await db_js_1.default.auditLog.create({
+            data: {
+                tenantId,
+                actorId: req.user.userId,
+                action: durationHours > 0 ? 'SUPPORT_ACCESS_GRANT' : 'SUPPORT_ACCESS_REVOKE',
+                entityType: 'Tenant',
+                entityId: tenantId,
+                metadata: JSON.stringify({ hours: durationHours, supportAccessGrantedUntil }),
+            },
+        });
+        return res.status(200).json({
+            message: durationHours > 0 ? `Support access granted for ${durationHours} hours.` : 'Support access revoked.',
+            tenant: updated
+        });
     }
     catch (error) {
         return res.status(500).json({ error: error.message });

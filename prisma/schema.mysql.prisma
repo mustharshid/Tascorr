@@ -18,6 +18,7 @@ model Tenant {
   status                  String                    @default("active") @db.VarChar(50) // active, suspended
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
+  supportAccessGrantedUntil DateTime?               @map("support_access_granted_until")
   
   // Relations
   users                   User[]

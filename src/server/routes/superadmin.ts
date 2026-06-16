@@ -136,6 +136,21 @@ router.get('/audit-logs', authenticateSession, requireSuperadmin, async (req: Re
     const sortOrder = req.query.sortOrder === 'asc' ? 'asc' : 'desc';
 
     const where: any = {};
+    const now = new Date();
+    where.AND = [
+      {
+        OR: [
+          { tenantId: 0 },
+          {
+            tenant: {
+              supportAccessGrantedUntil: {
+                gt: now
+              }
+            }
+          }
+        ]
+      }
+    ];
 
     if (actor) {
       where.actor = {
@@ -225,7 +240,8 @@ router.get('/tenants', authenticateSession, requireSuperadmin, async (req: Reque
       subscriptionTier: t.subscriptionTier,
       createdAt: t.createdAt,
       staffCount: t._count.users,
-      tasksCount: t._count.tasks
+      tasksCount: t._count.tasks,
+      supportAccessGrantedUntil: t.supportAccessGrantedUntil
     }));
 
     return res.status(200).json({ tenants: formattedTenants });
@@ -292,6 +308,18 @@ router.post('/tenants/:tenantId/reset-admin-password', authenticateSession, requ
   }
 
   try {
+    // Verify support access consent
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId }
+    });
+    if (!tenant) {
+      return res.status(404).json({ error: 'Organization not found.' });
+    }
+    const now = new Date();
+    if (!tenant.supportAccessGrantedUntil || tenant.supportAccessGrantedUntil < now) {
+      return res.status(403).json({ error: 'Access denied. The company has not granted active support consent.' });
+    }
+
     // Find the company administrator (rank level 0) for this tenant
     const adminUser = await prisma.user.findFirst({
       where: {

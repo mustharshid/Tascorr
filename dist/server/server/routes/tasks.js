@@ -19,7 +19,7 @@ router.post('/', auth_middleware_js_1.authenticateSession, async (req, res) => {
     const { title, description, dueDate, priority, departmentId, assigneeIds, isRecurring, recurrenceInterval, subtasks } = req.body;
     const tenantId = req.user.tenantId;
     // 1. Validate mandatory fields
-    const missing = validator_js_1.Validator.validateRequired(req.body, ['title', 'description', 'dueDate', 'priority', 'assigneeIds']);
+    const missing = validator_js_1.Validator.validateRequired(req.body, ['title', 'dueDate', 'priority', 'assigneeIds']);
     if (missing.length > 0) {
         return res.status(400).json({ error: `Missing mandatory parameter fields: ${missing.join(', ')}` });
     }
@@ -49,7 +49,7 @@ router.post('/', auth_middleware_js_1.authenticateSession, async (req, res) => {
                 data: {
                     tenantId,
                     title,
-                    description,
+                    description: description || '',
                     dueDate: new Date(dueDate),
                     priority,
                     departmentId: departmentId || null,
@@ -83,6 +83,24 @@ router.post('/', auth_middleware_js_1.authenticateSession, async (req, res) => {
             }
             // Write AuditLog
             await audit_js_1.AuditService.logAction(tenantId, req.user.userId, 'TASK_CREATE', 'Task', createdTask.id, { title, priority, assignees: assigneeIds }, tx);
+            // Create notifications for each assignee (excluding creator themselves)
+            const actor = await tx.user.findUnique({
+                where: { id: req.user.userId },
+            });
+            const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Someone';
+            const notificationData = assigneeIds
+                .filter((userId) => userId !== req.user.userId)
+                .map((userId) => ({
+                tenantId,
+                recipientId: userId,
+                title: 'Task Assigned',
+                message: `${actorName} assigned you the task: "${title}".`,
+            }));
+            if (notificationData.length > 0) {
+                await tx.notification.createMany({
+                    data: notificationData,
+                });
+            }
             return createdTask;
         });
         return res.status(201).json({
@@ -324,6 +342,29 @@ router.patch('/:id/status', auth_middleware_js_1.authenticateSession, async (req
                 // Log audit action for the auto-created task
                 await audit_js_1.AuditService.logAction(task.tenantId, task.createdById, 'TASK_CREATE_RECURRING', 'Task', nextTask.id, { title: nextTask.title, parentTaskId: task.id }, tx);
             }
+            // Create notifications for all active assignees and the creator (excluding the user updating the status)
+            const actor = await tx.user.findUnique({
+                where: { id: req.user.userId },
+            });
+            const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Someone';
+            const activeAssignments = await tx.taskAssignment.findMany({
+                where: { taskId: task.id, isActive: true },
+            });
+            const recipientIds = new Set();
+            activeAssignments.forEach(a => recipientIds.add(a.userId));
+            recipientIds.add(task.createdById);
+            recipientIds.delete(req.user.userId); // Don't notify the updater
+            const notificationsData = Array.from(recipientIds).map(userId => ({
+                tenantId: req.user.tenantId,
+                recipientId: userId,
+                title: 'Task Status Updated',
+                message: `${actorName} changed the status of "${task.title}" to "${status}".`,
+            }));
+            if (notificationsData.length > 0) {
+                await tx.notification.createMany({
+                    data: notificationsData,
+                });
+            }
             return t;
         });
         return res.status(200).json({ message: 'Task status updated.', task: updatedTask });
@@ -414,6 +455,12 @@ router.post('/:id/reassign', auth_middleware_js_1.authenticateSession, async (re
         }
         // 2. Perform transaction reassign
         await db_js_1.default.$transaction(async (tx) => {
+            const task = await tx.task.findUnique({
+                where: { id: taskId },
+            });
+            if (!task) {
+                throw new Error('Task not found');
+            }
             // Find current active assignment
             const currentActive = await tx.taskAssignment.findFirst({
                 where: { taskId, isActive: true },
@@ -441,6 +488,21 @@ router.post('/:id/reassign', auth_middleware_js_1.authenticateSession, async (re
             });
             // Write AuditLog
             await audit_js_1.AuditService.logAction(req.user.tenantId, req.user.userId, 'TASK_REASSIGN', 'Task', taskId, { fromUserId, toUserId: targetAssigneeId, reason }, tx);
+            // Create notification for target assignee (if not the caller themselves)
+            if (targetAssigneeId !== req.user.userId) {
+                const actor = await tx.user.findUnique({
+                    where: { id: req.user.userId },
+                });
+                const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Someone';
+                await tx.notification.create({
+                    data: {
+                        tenantId: req.user.tenantId,
+                        recipientId: targetAssigneeId,
+                        title: 'Task Reassigned',
+                        message: `${actorName} reassigned the task "${task.title}" to you.`,
+                    },
+                });
+            }
         });
         return res.status(200).json({ message: 'Task reassigned successfully.' });
     }
@@ -491,6 +553,21 @@ router.post('/:id/blockers', auth_middleware_js_1.authenticateSession, async (re
             });
             // 3. Log action
             await audit_js_1.AuditService.logAction(req.user.tenantId, req.user.userId, 'TASK_BLOCKED', 'Task', taskId, { description }, tx);
+            // Create notification for task creator (if they are not raising it themselves)
+            if (task.createdById !== req.user.userId) {
+                const actor = await tx.user.findUnique({
+                    where: { id: req.user.userId },
+                });
+                const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Someone';
+                await tx.notification.create({
+                    data: {
+                        tenantId: req.user.tenantId,
+                        recipientId: task.createdById,
+                        title: 'Task Blocked',
+                        message: `${actorName} flagged "${task.title}" as Blocked: "${description}".`,
+                    },
+                });
+            }
         });
         return res.status(200).json({ message: 'Task flagged as blocked successfully. Deadline suspended.' });
     }
@@ -563,6 +640,29 @@ router.patch('/:id/blockers/:blockerId/resolve', auth_middleware_js_1.authentica
                     metadata: JSON.stringify({ taskId, resolutionComment }),
                 },
             });
+            // Notify the blocker reporter and all active assignees (excluding the user resolving it)
+            const actor = await tx.user.findUnique({
+                where: { id: req.user.userId },
+            });
+            const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Someone';
+            const activeAssignments = await tx.taskAssignment.findMany({
+                where: { taskId, isActive: true },
+            });
+            const recipientIds = new Set();
+            recipientIds.add(blocker.reporterId);
+            activeAssignments.forEach(a => recipientIds.add(a.userId));
+            recipientIds.delete(req.user.userId);
+            const notificationsData = Array.from(recipientIds).map(userId => ({
+                tenantId: req.user.tenantId,
+                recipientId: userId,
+                title: 'Blocker Resolved',
+                message: `${actorName} resolved the blocker on "${task.title}": "${resolutionComment}".`,
+            }));
+            if (notificationsData.length > 0) {
+                await tx.notification.createMany({
+                    data: notificationsData,
+                });
+            }
             return b;
         });
         return res.status(200).json({ message: 'Blocker resolved successfully. Task status set to In Progress.', blocker: resolvedBlocker });
@@ -591,6 +691,12 @@ router.post('/:id/comments', auth_middleware_js_1.authenticateSession, async (re
             return res.status(403).json({ error: 'Access denied. You cannot view or comment on this task.' });
         }
         const comment = await db_js_1.default.$transaction(async (tx) => {
+            const task = await tx.task.findUnique({
+                where: { id: taskId },
+            });
+            if (!task) {
+                throw new Error('Task not found');
+            }
             const c = await tx.taskComment.create({
                 data: {
                     tenantId: req.user.tenantId,
@@ -610,6 +716,30 @@ router.post('/:id/comments', auth_middleware_js_1.authenticateSession, async (re
                     metadata: JSON.stringify({ taskId, commentLength: content.length }),
                 },
             });
+            // Notify task creator and all active assignees (excluding commenter)
+            const actor = await tx.user.findUnique({
+                where: { id: req.user.userId },
+            });
+            const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Someone';
+            const activeAssignments = await tx.taskAssignment.findMany({
+                where: { taskId, isActive: true },
+            });
+            const recipientIds = new Set();
+            recipientIds.add(task.createdById);
+            activeAssignments.forEach(a => recipientIds.add(a.userId));
+            recipientIds.delete(req.user.userId);
+            const previewText = content.length > 50 ? `${content.substring(0, 50)}...` : content;
+            const notificationsData = Array.from(recipientIds).map(userId => ({
+                tenantId: req.user.tenantId,
+                recipientId: userId,
+                title: 'New Task Comment',
+                message: `${actorName} commented on "${task.title}": "${previewText}".`,
+            }));
+            if (notificationsData.length > 0) {
+                await tx.notification.createMany({
+                    data: notificationsData,
+                });
+            }
             return c;
         });
         return res.status(201).json({ message: 'Comment added successfully.', comment });

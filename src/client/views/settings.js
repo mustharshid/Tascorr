@@ -140,6 +140,26 @@ export function renderSettingsView() {
 
               <hr style="border: 0; border-top: 1px solid var(--border-neutral); margin: 8px 0;" />
 
+              <h3 class="card-title">Global Support Access Consent</h3>
+              <p class="body-text">Grant the platform superadmin temporary access to review organization audit trails or perform password resets for technical troubleshooting. This permission will automatically expire.</p>
+              <div style="display: flex; gap: 16px; align-items: center; max-width: 500px; padding: 16px; background-color: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-neutral);">
+                <div style="flex: 1;">
+                  <strong id="support-status-label" style="font-size: 14px; font-weight: 600;">Status: Access Revoked</strong>
+                  <p id="support-expiry-label" class="small-text" style="margin-top: 4px;">No active support grant</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <select id="support-duration-select" style="padding: 8px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); background: var(--bg-tertiary); color: var(--text-primary); font-size: 13px;">
+                    <option value="1">1 Hour</option>
+                    <option value="4">4 Hours</option>
+                    <option value="24">24 Hours</option>
+                  </select>
+                  <button id="grant-support-btn" class="btn btn-primary" style="padding: 8px 12px; font-size: 13px;">Grant</button>
+                  <button id="revoke-support-btn" class="btn btn-ghost" style="padding: 8px 12px; font-size: 13px; display: none;">Revoke</button>
+                </div>
+              </div>
+
+              <hr style="border: 0; border-top: 1px solid var(--border-neutral); margin: 8px 0;" />
+
               <h3 class="card-title">Hierarchy Settings</h3>
               <form id="top-rank-form" style="display: flex; flex-direction: column; gap: 16px; max-width: 500px;">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -258,9 +278,37 @@ export function initSettingsListeners() {
               logoFallback.innerText = data.tenant.name?.[0] || '?';
             };
           }
+
+          // Render Support Access Status
+          renderSupportStatus(data.tenant.supportAccessGrantedUntil);
         }
       })
       .catch(err => console.error('Failed to load company details', err));
+
+    function renderSupportStatus(grantedUntil) {
+      const statusLabel = document.getElementById('support-status-label');
+      const expiryLabel = document.getElementById('support-expiry-label');
+      const grantBtn = document.getElementById('grant-support-btn');
+      const revokeBtn = document.getElementById('revoke-support-btn');
+
+      if (!statusLabel || !expiryLabel) return;
+
+      const now = new Date();
+      if (grantedUntil && new Date(grantedUntil) > now) {
+        const expiryDate = new Date(grantedUntil);
+        statusLabel.innerText = 'Status: Support Access Active';
+        statusLabel.style.color = '#10B981'; // var(--status-success) equivalent
+        expiryLabel.innerText = `Active until: ${expiryDate.toLocaleString()}`;
+        if (grantBtn) grantBtn.style.display = 'none';
+        if (revokeBtn) revokeBtn.style.display = 'block';
+      } else {
+        statusLabel.innerText = 'Status: Access Revoked';
+        statusLabel.style.color = '#EF4444'; // var(--status-danger) equivalent
+        expiryLabel.innerText = 'No active support grant';
+        if (grantBtn) grantBtn.style.display = 'block';
+        if (revokeBtn) revokeBtn.style.display = 'none';
+      }
+    }
 
     fetchApi('GET', '/users/ranks')
       .then(ranksRes => {
@@ -373,6 +421,28 @@ export function initSettingsListeners() {
         }
       };
       reader.readAsDataURL(file);
+    });
+
+    document.getElementById('grant-support-btn')?.addEventListener('click', async () => {
+      const hoursSelect = document.getElementById('support-duration-select');
+      const hours = hoursSelect ? Number(hoursSelect.value) : 1;
+      try {
+        const res = await fetchApi('POST', '/users/tenant/support-access', { hours });
+        renderSupportStatus(res.tenant.supportAccessGrantedUntil);
+        Notifications.success('Access Granted', res.message);
+      } catch (err) {
+        Notifications.error('Grant Failed', err.message || 'Could not grant support access.');
+      }
+    });
+
+    document.getElementById('revoke-support-btn')?.addEventListener('click', async () => {
+      try {
+        const res = await fetchApi('POST', '/users/tenant/support-access', { hours: 0 });
+        renderSupportStatus(null);
+        Notifications.success('Access Revoked', res.message);
+      } catch (err) {
+        Notifications.error('Revocation Failed', err.message || 'Could not revoke support access.');
+      }
     });
   }
 

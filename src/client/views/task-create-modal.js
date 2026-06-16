@@ -103,7 +103,7 @@ export class TaskCreateDrawer {
             <!-- Description -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Description</label>
-              <textarea id="task-desc" required maxlength="2000" placeholder="Add detailed notes..." style="padding: 12px 16px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-size: 14px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: none; height: 70px; box-sizing: border-box;"></textarea>
+              <textarea id="task-desc" maxlength="2000" placeholder="Add detailed notes..." style="padding: 12px 16px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-size: 14px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: none; height: 70px; box-sizing: border-box;"></textarea>
             </div>
 
             <!-- Due Date & Priority Grid -->
@@ -209,7 +209,7 @@ export class TaskCreateDrawer {
                   <span class="tooltip-text">Detailed instructions or context required to complete the task.</span>
                 </div>
               </label>
-              <textarea id="task-desc" required maxlength="2000" placeholder="Provide clear contextual description parameters..." rows="4" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: vertical;"></textarea>
+              <textarea id="task-desc" maxlength="2000" placeholder="Provide clear contextual description parameters..." rows="4" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: vertical;"></textarea>
             </div>
 
             <!-- Subtasks Checklist -->
@@ -380,6 +380,18 @@ export class TaskCreateDrawer {
       });
     }
 
+      // Open native date picker when clicking on the input field
+      const dueInput = document.getElementById('task-due');
+      if (dueInput) {
+        dueInput.addEventListener('click', () => {
+          try {
+            dueInput.showPicker();
+          } catch (e) {
+            console.warn('showPicker not supported', e);
+          }
+        });
+      }
+
     // Mobile Custom Selectors
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
@@ -529,7 +541,7 @@ export class TaskCreateDrawer {
       }
 
       // Validations
-      if (!title || !description || !dueDate || !assigneeId) {
+      if (!title || !dueDate || !assigneeId) {
         showError('Please populate all mandatory fields.');
         return;
       }
@@ -539,7 +551,7 @@ export class TaskCreateDrawer {
         return;
       }
 
-      if (description.length > 2000) {
+      if (description && description.length > 2000) {
         showError('Description cannot exceed 2000 characters.');
         return;
       }

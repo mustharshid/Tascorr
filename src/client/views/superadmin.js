@@ -118,6 +118,11 @@ export function renderSuperadminView() {
           <div class="widget-card" style="display: flex; flex-direction: column; gap: 16px;">
             <h3 class="card-title">Global Audit & Session Logs</h3>
             
+            <!-- Active Support Access Grants Banner -->
+            <div id="active-support-grants" style="display: none; flex-direction: column; gap: 8px; padding: 12px 16px; background-color: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-md); font-size: 13px;">
+              <!-- Populated dynamically -->
+            </div>
+
             <!-- Advanced Filters -->
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 12px 16px; background-color: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-neutral);">
               <div style="display: flex; flex-direction: column; gap: 4px; min-width: 150px; flex: 1;">
@@ -393,6 +398,28 @@ async function loadRegisteredCompanies() {
   try {
     const data = await fetchApi('GET', '/superadmin/tenants');
     const companies = data.tenants || [];
+
+    // Render active support grants list in the global audit logs card
+    const grantsContainer = document.getElementById('active-support-grants');
+    if (grantsContainer) {
+      const activeGrants = companies.filter(c => c.supportAccessGrantedUntil && new Date(c.supportAccessGrantedUntil) > new Date());
+      if (activeGrants.length > 0) {
+        grantsContainer.style.display = 'flex';
+        grantsContainer.innerHTML = `
+          <strong style="color: #10B981; display: flex; align-items: center; gap: 6px;">
+            <span class="badge-dot" style="background-color: #10B981;"></span>
+            Active Support Grants:
+          </strong>
+          <ul style="margin: 4px 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 4px; color: var(--text-primary);">
+            ${activeGrants.map(c => `
+              <li><strong>${escapeHTML(c.name)}</strong> has granted access until <strong>${new Date(c.supportAccessGrantedUntil).toLocaleString()}</strong>.</li>
+            `).join('')}
+          </ul>
+        `;
+      } else {
+        grantsContainer.style.display = 'none';
+      }
+    }
 
     if (companies.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--text-secondary);">No organizations registered on the platform yet.</td></tr>`;

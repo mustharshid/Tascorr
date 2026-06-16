@@ -124,6 +124,21 @@ router.get('/audit-logs', auth_middleware_js_1.authenticateSession, auth_middlew
         const endDate = req.query.endDate ? String(req.query.endDate).trim() : '';
         const sortOrder = req.query.sortOrder === 'asc' ? 'asc' : 'desc';
         const where = {};
+        const now = new Date();
+        where.AND = [
+            {
+                OR: [
+                    { tenantId: 0 },
+                    {
+                        tenant: {
+                            supportAccessGrantedUntil: {
+                                gt: now
+                            }
+                        }
+                    }
+                ]
+            }
+        ];
         if (actor) {
             where.actor = {
                 email: {
@@ -205,7 +220,8 @@ router.get('/tenants', auth_middleware_js_1.authenticateSession, auth_middleware
             subscriptionTier: t.subscriptionTier,
             createdAt: t.createdAt,
             staffCount: t._count.users,
-            tasksCount: t._count.tasks
+            tasksCount: t._count.tasks,
+            supportAccessGrantedUntil: t.supportAccessGrantedUntil
         }));
         return res.status(200).json({ tenants: formattedTenants });
     }
@@ -263,6 +279,17 @@ router.post('/tenants/:tenantId/reset-admin-password', auth_middleware_js_1.auth
         return res.status(400).json({ error: 'Password must be at least 12 characters long and contain uppercase, lowercase, numbers, and symbols.' });
     }
     try {
+        // Verify support access consent
+        const tenant = await db_js_1.default.tenant.findUnique({
+            where: { id: tenantId }
+        });
+        if (!tenant) {
+            return res.status(404).json({ error: 'Organization not found.' });
+        }
+        const now = new Date();
+        if (!tenant.supportAccessGrantedUntil || tenant.supportAccessGrantedUntil < now) {
+            return res.status(403).json({ error: 'Access denied. The company has not granted active support consent.' });
+        }
         // Find the company administrator (rank level 0) for this tenant
         const adminUser = await db_js_1.default.user.findFirst({
             where: {
