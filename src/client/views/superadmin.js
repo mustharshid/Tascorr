@@ -79,7 +79,12 @@ export function renderSuperadminView() {
                   <span class="tooltip-text">The root administrator's initial login key.</span>
                 </div>
               </label>
-              <input type="password" id="tenant-password" required placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" style="padding: 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md);" />
+              <div style="position: relative; width: 100%; display: flex; flex-direction: column;">
+                <input type="password" id="tenant-password" required placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" style="padding: 8px 40px 8px 12px; border:1px solid var(--border-neutral); border-radius:var(--radius-md); width: 100%;" />
+                <button type="button" class="password-toggle-btn" data-target="tenant-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; padding: 0; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; z-index: 5;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+              </div>
             </div>
 
             <div style="grid-column: span 2; margin-top: 8px;">
