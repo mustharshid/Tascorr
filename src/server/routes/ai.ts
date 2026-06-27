@@ -64,7 +64,7 @@ router.post('/refine', authenticateSession, async (req: Request, res: Response) 
       return res.status(502).json({ error: 'Failed to communicate with the Gemini API server.' });
     }
 
-    const data = await apiResponse.json();
+    const data = (await apiResponse.json()) as any;
     const refinedText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!refinedText) {

@@ -10,6 +10,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const path_1 = __importDefault(require("path"));
 const error_middleware_js_1 = require("./middleware/error.middleware.js");
 // Import routers
 const auth_js_1 = __importDefault(require("./routes/auth.js"));
@@ -19,6 +20,7 @@ const superadmin_js_1 = __importDefault(require("./routes/superadmin.js"));
 const departments_js_1 = __importDefault(require("./routes/departments.js"));
 const notifications_js_1 = __importDefault(require("./routes/notifications.js"));
 const uploads_js_1 = __importDefault(require("./routes/uploads.js"));
+const ai_js_1 = __importDefault(require("./routes/ai.js"));
 // Load environment configurations
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -50,6 +52,9 @@ app.use((0, cors_1.default)({
 }));
 // Enable JSON body parser middleware with 5mb limit for avatars
 app.use(express_1.default.json({ limit: '5mb' }));
+// Serve static avatars from active client folder and fallback public folder
+app.use('/avatars', express_1.default.static(path_1.default.resolve(process.cwd(), 'dist/client/avatars')));
+app.use('/avatars', express_1.default.static(path_1.default.resolve(process.cwd(), 'public/avatars')));
 // Set up rate limiter for authentication endpoints
 const authLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -68,6 +73,7 @@ app.use('/api/superadmin', superadmin_js_1.default);
 app.use('/api/departments', departments_js_1.default);
 app.use('/api/notifications', notifications_js_1.default);
 app.use('/api/upload', uploads_js_1.default);
+app.use('/api/ai', ai_js_1.default);
 // API Health check endpoint
 app.get('/api/health', (req, res) => {
     res.status(200).json({

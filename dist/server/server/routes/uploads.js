@@ -9,10 +9,19 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const db_js_1 = __importDefault(require("../services/db.js"));
 const router = (0, express_1.Router)();
-const AVATARS_DIR = path_1.default.resolve(process.cwd(), 'public', 'avatars');
-// Ensure directory exists
-if (!fs_1.default.existsSync(AVATARS_DIR)) {
-    fs_1.default.mkdirSync(AVATARS_DIR, { recursive: true });
+const PUBLIC_AVATARS_DIR = path_1.default.resolve(process.cwd(), 'public', 'avatars');
+const DIST_AVATARS_DIR = path_1.default.resolve(process.cwd(), 'dist', 'client', 'avatars');
+// Ensure directories exist
+if (!fs_1.default.existsSync(PUBLIC_AVATARS_DIR)) {
+    fs_1.default.mkdirSync(PUBLIC_AVATARS_DIR, { recursive: true });
+}
+if (!fs_1.default.existsSync(DIST_AVATARS_DIR)) {
+    try {
+        fs_1.default.mkdirSync(DIST_AVATARS_DIR, { recursive: true });
+    }
+    catch (err) {
+        console.warn('Could not create dist client avatars directory:', err);
+    }
 }
 /**
  * POST /api/upload/avatar
@@ -37,8 +46,14 @@ router.post('/avatar', auth_middleware_js_1.authenticateSession, async (req, res
         // Save as JPEG to standardize or keep original. We'll use a standard .jpg extension for simplicity, 
         // even if it's png, browsers will infer the mime type from content.
         const filename = `user-${userId}.jpg`;
-        const filepath = path_1.default.join(AVATARS_DIR, filename);
-        fs_1.default.writeFileSync(filepath, buffer);
+        // Save to both persistent storage and active client serving folder
+        fs_1.default.writeFileSync(path_1.default.join(PUBLIC_AVATARS_DIR, filename), buffer);
+        try {
+            fs_1.default.writeFileSync(path_1.default.join(DIST_AVATARS_DIR, filename), buffer);
+        }
+        catch (err) {
+            console.warn('Failed to write to dist client avatars:', err);
+        }
         return res.status(200).json({
             message: 'Avatar uploaded successfully',
             avatarUrl: `/avatars/${filename}?t=${Date.now()}` // add timestamp to bust cache
@@ -69,8 +84,14 @@ router.post('/tenant-logo', auth_middleware_js_1.authenticateSession, auth_middl
             return res.status(400).json({ error: 'Image exceeds 5MB size limit.' });
         }
         const filename = `tenant-${tenantId}.jpg`;
-        const filepath = path_1.default.join(AVATARS_DIR, filename);
-        fs_1.default.writeFileSync(filepath, buffer);
+        // Save to both persistent storage and active client serving folder
+        fs_1.default.writeFileSync(path_1.default.join(PUBLIC_AVATARS_DIR, filename), buffer);
+        try {
+            fs_1.default.writeFileSync(path_1.default.join(DIST_AVATARS_DIR, filename), buffer);
+        }
+        catch (err) {
+            console.warn('Failed to write to dist client logo:', err);
+        }
         const logoUrl = `/avatars/${filename}`;
         await db_js_1.default.tenant.update({
             where: { id: tenantId },
