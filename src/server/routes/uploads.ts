@@ -5,11 +5,19 @@ import path from 'path';
 import prisma from '../services/db.js';
 
 const router = Router();
-const AVATARS_DIR = path.resolve(process.cwd(), 'public', 'avatars');
+const PUBLIC_AVATARS_DIR = path.resolve(process.cwd(), 'public', 'avatars');
+const DIST_AVATARS_DIR = path.resolve(process.cwd(), 'dist', 'client', 'avatars');
 
-// Ensure directory exists
-if (!fs.existsSync(AVATARS_DIR)) {
-  fs.mkdirSync(AVATARS_DIR, { recursive: true });
+// Ensure directories exist
+if (!fs.existsSync(PUBLIC_AVATARS_DIR)) {
+  fs.mkdirSync(PUBLIC_AVATARS_DIR, { recursive: true });
+}
+if (!fs.existsSync(DIST_AVATARS_DIR)) {
+  try {
+    fs.mkdirSync(DIST_AVATARS_DIR, { recursive: true });
+  } catch (err) {
+    console.warn('Could not create dist client avatars directory:', err);
+  }
 }
 
 /**
@@ -41,9 +49,14 @@ router.post('/avatar', authenticateSession, async (req: Request, res: Response) 
     // Save as JPEG to standardize or keep original. We'll use a standard .jpg extension for simplicity, 
     // even if it's png, browsers will infer the mime type from content.
     const filename = `user-${userId}.jpg`;
-    const filepath = path.join(AVATARS_DIR, filename);
-
-    fs.writeFileSync(filepath, buffer);
+    
+    // Save to both persistent storage and active client serving folder
+    fs.writeFileSync(path.join(PUBLIC_AVATARS_DIR, filename), buffer);
+    try {
+      fs.writeFileSync(path.join(DIST_AVATARS_DIR, filename), buffer);
+    } catch (err) {
+      console.warn('Failed to write to dist client avatars:', err);
+    }
 
     return res.status(200).json({ 
       message: 'Avatar uploaded successfully',
@@ -82,9 +95,14 @@ router.post('/tenant-logo', authenticateSession, requireAdmin, async (req: Reque
     }
 
     const filename = `tenant-${tenantId}.jpg`;
-    const filepath = path.join(AVATARS_DIR, filename);
-
-    fs.writeFileSync(filepath, buffer);
+    
+    // Save to both persistent storage and active client serving folder
+    fs.writeFileSync(path.join(PUBLIC_AVATARS_DIR, filename), buffer);
+    try {
+      fs.writeFileSync(path.join(DIST_AVATARS_DIR, filename), buffer);
+    } catch (err) {
+      console.warn('Failed to write to dist client logo:', err);
+    }
 
     const logoUrl = `/avatars/${filename}`;
     await prisma.tenant.update({

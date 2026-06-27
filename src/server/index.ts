@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { errorHandler } from './middleware/error.middleware.js';
 
 // Import routers
@@ -55,6 +56,10 @@ app.use(cors({
 
 // Enable JSON body parser middleware with 5mb limit for avatars
 app.use(express.json({ limit: '5mb' }));
+
+// Serve static avatars from active client folder and fallback public folder
+app.use('/avatars', express.static(path.resolve(process.cwd(), 'dist/client/avatars')));
+app.use('/avatars', express.static(path.resolve(process.cwd(), 'public/avatars')));
 
 // Set up rate limiter for authentication endpoints
 const authLimiter = rateLimit({
