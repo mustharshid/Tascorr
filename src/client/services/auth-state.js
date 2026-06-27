@@ -125,7 +125,10 @@ class AuthStateService {
     // or rankLevel === 0 and email has superadmin domain.
     // Wait, the auth session middleware checks token decodes tenantId === 0. Let's make sure
     // we set rankLevel 0.
-    return this.isAuthenticated && this.currentUser && this.currentUser.email === 'superadmin@tascorr.com';
+    return this.isAuthenticated && this.currentUser && 
+      (this.currentUser.email === 'superadmin@tascorr.com' || 
+       this.currentUser.email === 'superadmin@thinksafe.mv' || 
+       this.currentUser.rankTitle === 'Global Superadmin');
   }
 }
 
