@@ -81,12 +81,12 @@ section "Starting the server"
 # Try to use pm2 first (global install). If unavailable we fall back to nohup.
 if command -v $PM2_GLOBAL >/dev/null 2>&1; then
   echo "pm2 detected – launching the app with pm2."
-  $PM2_GLOBAL start ./dist/server/index.js --name tascorr
+  $PM2_GLOBAL start ./dist/server/server/index.js --name tascorr
   $PM2_GLOBAL save
 else
   echo "pm2 not available – using nohup to run in background."
-  nohup node ./dist/server/index.js > server.log 2>&1 &
-  echo "Server started, PID $(pgrep -f ./dist/server/index.js)"
+  nohup node ./dist/server/server/index.js > server.log 2>&1 &
+  echo "Server started, PID $(pgrep -f ./dist/server/server/index.js)"
 fi
 
 section "Deployment complete"
@@ -94,7 +94,7 @@ echo "Your app is now running on port $APP_PORT."
 if command -v $PM2_GLOBAL >/dev/null 2>&1; then
   echo "Manage it with: $PM2_GLOBAL status | $PM2_GLOBAL restart tascorr | $PM2_GLOBAL stop tascorr"
 else
-  echo "To stop the app: kill \\$(pgrep -f ./dist/server/index.js)"
+  echo "To stop the app: kill $(pgrep -f ./dist/server/server/index.js)"
 fi
 
 # ------------------------------------------------------------

@@ -77,15 +77,15 @@ if ! command -v pm2 >/dev/null 2>&1; then
 fi
 
 # 8. Start the backend in production mode using PM2
-# The compiled server entry point is ./dist/server/index.js after Vite build.
+# The compiled server entry point is ./dist/server/server/index.js after Vite build.
 # Ensure the build output exists – if not, run the build again.
-if [ ! -f "dist/server/index.js" ]; then
+if [ ! -f "dist/server/server/index.js" ]; then
   echo "Server entry not found – running Vite build again..."
   npm run build
 fi
 
 # Use a stable name so we can restart easily.
-pm2 start ./dist/server/index.js --name tascorr
+pm2 start ./dist/server/server/index.js --name tascorr
 pm2 save
 
 # 9. Optional – set up a reverse proxy (e.g., Nginx) to map a sub‑directory.

@@ -71,7 +71,7 @@ To prepare the application files for upload:
    * **Application Mode:** Set to `production`.
    * **Application Root:** Select the directory where you extracted the files (e.g. `/httpdocs`).
    * **Document Root:** Select the public webroot (e.g. `/httpdocs/public`).
-   * **Application Startup File:** Set to `dist/server/index.js` (this is the compiled backend entry point).
+   * **Application Startup File:** Set to **`dist/server/server/index.js`** (this is the compiled backend entry point).
 4. Click **NPM Install** in the Node.js settings screen to install the production dependencies on the server.
 5. Click **Enable Node.js**. Plesk Phusion Passenger will automatically spin up the Node.js application process and reverse-proxy incoming web traffic.
 
