@@ -42,7 +42,7 @@ router.post('/refine', authenticateSession, async (req: Request, res: Response) 
       prompt = `Act as a professional task coordinator. Rewrite the following task description to correct grammar and spelling mistakes, format it clearly, and make it highly professional. Keep it concise. If it lists multiple items or steps, format them with simple markdown bullet points (- item). Respond with ONLY the polished description and nothing else. Do not add quotes, explanation, introductory remarks, or markdown code wraps.\n\nDescription to polish:\n${cleanText}`;
     }
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
     
     const apiResponse = await fetch(endpoint, {
       method: 'POST',
