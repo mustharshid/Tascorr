@@ -2,7 +2,7 @@
   "name": "Tascorr",
   "short_name": "Tascorr",
   "description": "Multi-tenant task delegation and workforce accountability platform.",
-  "start_url": "/tascorr/#dashboard",
+  "start_url": "/#dashboard",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563EB",
