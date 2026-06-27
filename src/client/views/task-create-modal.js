@@ -97,13 +97,23 @@ export class TaskCreateDrawer {
             <!-- Task Title -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Task Title</label>
-              <input type="text" id="task-title" required maxlength="100" placeholder="What needs to be done?" style="padding: 12px 16px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-size: 15px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; font-weight: 500; box-sizing: border-box;" />
+              <div style="position: relative; width: 100%;">
+                <input type="text" id="task-title" required maxlength="100" placeholder="What needs to be done?" style="padding: 12px 44px 12px 16px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-size: 15px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; font-weight: 500; box-sizing: border-box; width: 100%;" />
+                <button type="button" class="ai-refine-btn" data-target="task-title" data-type="title" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; padding: 0; cursor: pointer; color: var(--accent-navy-primary); display: flex; align-items: center; justify-content: center; z-index: 5;" title="AI Auto-format Title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-sparkle-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z"/></svg>
+                </button>
+              </div>
             </div>
 
             <!-- Description -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <label class="small-text" style="font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Description</label>
-              <textarea id="task-desc" maxlength="2000" placeholder="Add detailed notes..." style="padding: 12px 16px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-size: 14px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: none; height: 70px; box-sizing: border-box;"></textarea>
+              <div style="position: relative; width: 100%;">
+                <textarea id="task-desc" maxlength="2000" placeholder="Add detailed notes..." style="padding: 12px 44px 12px 16px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-size: 14px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: none; height: 70px; box-sizing: border-box; width: 100%;"></textarea>
+                <button type="button" class="ai-refine-btn" data-target="task-desc" data-type="description" style="position: absolute; right: 12px; top: 20px; transform: translateY(-50%); background: transparent; border: none; padding: 0; cursor: pointer; color: var(--accent-navy-primary); display: flex; align-items: center; justify-content: center; z-index: 5;" title="AI Auto-format Description">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-sparkle-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z"/></svg>
+                </button>
+              </div>
             </div>
 
             <!-- Due Date & Priority Grid -->
@@ -197,7 +207,12 @@ export class TaskCreateDrawer {
                   <span class="tooltip-text">A concise, descriptive title for this task.</span>
                 </div>
               </label>
-              <input type="text" id="task-title" required maxlength="100" placeholder="Consolidated Financial Review" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none;" />
+              <div style="position: relative; width: 100%;">
+                <input type="text" id="task-title" required maxlength="100" placeholder="Consolidated Financial Review" style="padding: 10px 44px 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; width: 100%; box-sizing: border-box;" />
+                <button type="button" class="ai-refine-btn" data-target="task-title" data-type="title" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; padding: 0; cursor: pointer; color: var(--accent-navy-primary); display: flex; align-items: center; justify-content: center; z-index: 5;" title="AI Auto-format Title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-sparkle-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z"/></svg>
+                </button>
+              </div>
             </div>
 
             <!-- Description -->
@@ -209,7 +224,12 @@ export class TaskCreateDrawer {
                   <span class="tooltip-text">Detailed instructions or context required to complete the task.</span>
                 </div>
               </label>
-              <textarea id="task-desc" maxlength="2000" placeholder="Provide clear contextual description parameters..." rows="4" style="padding: 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: vertical;"></textarea>
+              <div style="position: relative; width: 100%;">
+                <textarea id="task-desc" maxlength="2000" placeholder="Provide clear contextual description parameters..." rows="4" style="padding: 10px 44px 10px 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-md); font-family: var(--font-text); font-size: 13px; background-color: var(--bg-secondary); color: var(--text-primary); outline: none; resize: vertical; width: 100%; box-sizing: border-box;"></textarea>
+                <button type="button" class="ai-refine-btn" data-target="task-desc" data-type="description" style="position: absolute; right: 12px; top: 20px; transform: translateY(-50%); background: transparent; border: none; padding: 0; cursor: pointer; color: var(--accent-navy-primary); display: flex; align-items: center; justify-content: center; z-index: 5;" title="AI Auto-format Description">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-sparkle-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z"/></svg>
+                </button>
+              </div>
             </div>
 
             <!-- Subtasks Checklist -->
@@ -604,6 +624,56 @@ export class TaskCreateDrawer {
           submitBtn.innerText = 'Create Task';
         }
       }
+    });
+
+    // AI Smart Assist text refinement click listeners
+    const aiRefineBtns = this.drawerEl.querySelectorAll('.ai-refine-btn');
+    aiRefineBtns.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const targetId = btn.getAttribute('data-target');
+        const type = btn.getAttribute('data-type');
+        const input = document.getElementById(targetId);
+        if (!input) return;
+
+        const currentText = input.value.trim();
+        if (!currentText) {
+          Notifications.warn('Input Required', 'Please enter some draft text first before using AI formatting.');
+          return;
+        }
+
+        const originalHtml = btn.innerHTML;
+        try {
+          // Show spinner and disable field
+          btn.innerHTML = `<svg class="animate-spin" style="animation: spin 1s linear infinite;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
+          btn.disabled = true;
+          input.disabled = true;
+
+          const { fetchApi } = await import('../services/api.js');
+          const res = await fetchApi('POST', '/ai/refine', { text: currentText, type });
+          input.value = res.refinedText;
+
+          // Trigger a beautiful success shimmer highlight on the input
+          input.style.transition = 'background-color 0.3s ease, border-color 0.3s ease';
+          input.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+          input.style.borderColor = 'var(--status-success)';
+          
+          setTimeout(() => {
+            input.style.backgroundColor = 'var(--bg-secondary)';
+            input.style.borderColor = 'var(--border-neutral)';
+          }, 1200);
+
+          Notifications.success('AI Formatted', 'Text formatted and polished successfully.');
+
+        } catch (err) {
+          console.error(err);
+          Notifications.error('Refinement Failed', err.message || 'Could not contact the AI service.');
+        } finally {
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          input.disabled = false;
+        }
+      });
     });
 
     function showError(msg) {

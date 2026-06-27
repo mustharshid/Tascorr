@@ -17,6 +17,7 @@ import superadminRouter from './routes/superadmin.js';
 import departmentsRouter from './routes/departments.js';
 import notificationsRouter from './routes/notifications.js';
 import uploadsRouter from './routes/uploads.js';
+import aiRouter from './routes/ai.js';
 
 // Load environment configurations
 dotenv.config();
@@ -80,6 +81,7 @@ app.use('/api/superadmin', superadminRouter);
 app.use('/api/departments', departmentsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/upload', uploadsRouter);
+app.use('/api/ai', aiRouter);
 
 // API Health check endpoint
 app.get('/api/health', (req, res) => {
