@@ -1,25 +1,24 @@
-// Prisma schema for Tascorr targeting SQLite for zero-config local development.
-// A backup targeting MySQL for Plesk is preserved in prisma/schema.mysql.prisma.
+// Prisma schema for Tascorr targeting MySQL/MariaDB on Plesk.
+// Designed according to Section 8 & 9.3.3 database standards of PROJECT_CONSTITUTION_V5.md.
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-1.1.x"]
+  provider = "prisma-client-js"
 }
 
 // 1. Tenants (Organization workspaces)
 model Tenant {
-  id                      Int                       @id @default(autoincrement())
-  name                    String
-  logoUrl                 String?
-  subscriptionTier        Int                       @default(1) // Tier 1, 2, 3
-  status                  String                    @default("active") // active, suspended
-  allowCrossDeptPeerAssignment Boolean              @default(true) // If true, same rank can assign across depts. If false, only same rank within same dept.
-  slaAccessLevel          Int                       @default(3) // Min rank level allowed to access SLA analytics
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  name                    String                    @db.VarChar(255)
+  logoUrl                 String?                   @db.VarChar(500)
+  subscriptionTier        Int                       @default(1) @db.TinyInt // Tier 1, 2, 3
+  status                  String                    @default("active") @db.VarChar(50) // active, suspended
+  allowCrossDeptPeerAssignment Boolean              @default(true)
+  slaAccessLevel          Int                       @default(3) @db.UnsignedInt
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
   supportAccessGrantedUntil DateTime?               @map("support_access_granted_until")
@@ -45,16 +44,16 @@ model Tenant {
 
 // 2. Users (All user accounts across all tenants)
 model User {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  email                   String                    @unique
-  passwordHash            String                    @map("password_hash")
-  firstName               String                    @map("first_name")
-  lastName                String                    @map("last_name")
-  rankId                  Int                       @map("rank_id")
-  departmentId            Int?                      @map("department_id")
-  managerId               Int?                      @map("manager_id")
-  status                  String                    @default("active") // active, deactivated
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  email                   String                    @unique @db.VarChar(255)
+  passwordHash            String                    @map("password_hash") @db.VarChar(255)
+  firstName               String                    @map("first_name") @db.VarChar(100)
+  lastName                String                    @map("last_name") @db.VarChar(100)
+  rankId                  Int                       @map("rank_id") @db.UnsignedInt
+  departmentId            Int?                      @map("department_id") @db.UnsignedInt
+  managerId               Int?                      @map("manager_id") @db.UnsignedInt
+  status                  String                    @default("active") @db.VarChar(50) // active, deactivated
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
   deletedAt               DateTime?                 @map("deleted_at") // Soft delete allowed for users
@@ -94,10 +93,10 @@ model User {
 
 // 3. Ranks (Configurable rank levels per tenant)
 model Rank {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  title                   String
-  level                   Int                       // Lower integer = higher authority
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  title                   String                    @db.VarChar(100)
+  level                   Int                       @db.UnsignedInt // Lower integer = higher authority
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
 
@@ -111,10 +110,10 @@ model Rank {
 
 // 4. Departments (Department definitions per tenant)
 model Department {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  name                    String
-  headUserId              Int?                      @map("head_user_id")
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  name                    String                    @db.VarChar(255)
+  headUserId              Int?                      @map("head_user_id") @db.UnsignedInt
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
   deletedAt               DateTime?                 @map("deleted_at") // Soft delete allowed for departments
@@ -131,22 +130,22 @@ model Department {
 
 // 5. Tasks (Core task records)
 model Task {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  title                   String
-  description             String
-  status                  String                    @default("Pending") // Pending, In Progress, Blocked, Under Review, Completed
-  priority                String                    // Critical, High, Medium, Low
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  title                   String                    @db.VarChar(255)
+  description             String                    @db.Text
+  status                  String                    @default("Pending") @db.VarChar(50) // Pending, In Progress, Blocked, Under Review, Completed
+  priority                String                    @db.VarChar(50) // Critical, High, Medium, Low
   dueDate                 DateTime                  @map("due_date")
-  createdById             Int                       @map("created_by_id")
-  departmentId            Int?                      @map("department_id") // department scoping
+  createdById             Int                       @map("created_by_id") @db.UnsignedInt
+  departmentId            Int?                      @map("department_id") @db.UnsignedInt // department scoping
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
   // Soft-deletes are PROHIBITED for tasks (NNR-6)
 
   isRecurring             Boolean                   @default(false) @map("is_recurring")
-  recurrenceInterval      String?                   @map("recurrence_interval") // daily, weekly, monthly
-  
+  recurrenceInterval      String?                   @map("recurrence_interval") @db.VarChar(50) // daily, weekly, monthly
+
   // Relations
   tenant                  Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   creator                 User                      @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: Restrict)
@@ -166,11 +165,11 @@ model Task {
 
 // 6. Subtasks (Child tasks belonging to parent tasks)
 model Subtask {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  taskId                  Int                       @map("task_id")
-  title                   String
-  status                  String                    @default("Pending") // Pending, In Progress, Completed
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  taskId                  Int                       @map("task_id") @db.UnsignedInt
+  title                   String                    @db.VarChar(255)
+  status                  String                    @default("Pending") @db.VarChar(50) // Pending, In Progress, Completed
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
   // Soft-deletes are PROHIBITED for subtasks
@@ -184,9 +183,9 @@ model Subtask {
 
 // 7. Task Dependencies (Prerequisite relationships between tasks)
 model TaskDependency {
-  id                      Int                       @id @default(autoincrement())
-  taskId                  Int                       @map("task_id") // The task that depends on another
-  prerequisiteTaskId      Int                       @map("prerequisite_task_id") // The task that must be completed first
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  taskId                  Int                       @map("task_id") @db.UnsignedInt // The task that depends on another
+  prerequisiteTaskId      Int                       @map("prerequisite_task_id") @db.UnsignedInt // The task that must be completed first
   createdAt               DateTime                  @default(now()) @map("created_at")
 
   // Relations
@@ -199,16 +198,16 @@ model TaskDependency {
 
 // 8. Task Assignments / Assignment History (Supports reassignment trail & multiple assignees)
 model TaskAssignment {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  taskId                  Int                       @map("task_id")
-  userId                  Int                       @map("user_id") // Active assignee
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  taskId                  Int                       @map("task_id") @db.UnsignedInt
+  userId                  Int                       @map("user_id") @db.UnsignedInt // Active assignee
   assignedAt              DateTime                  @default(now()) @map("assigned_at")
   
   // Reassignment tracking
-  reassignedFromUserId    Int?                      @map("reassigned_from_user_id")
-  reassignmentReason      String?
-  reassignedById          Int?                      @map("reassigned_by_id")
+  reassignedFromUserId    Int?                      @map("reassigned_from_user_id") @db.UnsignedInt
+  reassignmentReason      String?                   @map("reassignment_reason") @db.Text
+  reassignedById          Int?                      @map("reassigned_by_id") @db.UnsignedInt
   reassignedAt            DateTime?                 @map("reassigned_at")
   isActive                Boolean                   @default(true) @map("is_active")
 
@@ -223,11 +222,11 @@ model TaskAssignment {
 
 // 9. Task Comments (Comments attached to tasks)
 model TaskComment {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  taskId                  Int                       @map("task_id")
-  authorId                Int                       @map("author_id")
-  content                 String
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  taskId                  Int                       @map("task_id") @db.UnsignedInt
+  authorId                Int                       @map("author_id") @db.UnsignedInt
+  content                 String                    @db.Text
   createdAt               DateTime                  @default(now()) @map("created_at")
 
   // Relations
@@ -240,17 +239,17 @@ model TaskComment {
 
 // 10. Blockers (Formal blocker submissions and resolutions)
 model Blocker {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  taskId                  Int                       @map("task_id")
-  reporterId              Int                       @map("reporter_id")
-  description             String
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  taskId                  Int                       @map("task_id") @db.UnsignedInt
+  reporterId              Int                       @map("reporter_id") @db.UnsignedInt
+  description             String                    @db.Text
   createdAt               DateTime                  @default(now()) @map("created_at")
   
   // Resolution columns
   resolvedAt              DateTime?                 @map("resolved_at")
-  resolutionComment       String?
-  resolvedById            Int?                      @map("resolved_by_id")
+  resolutionComment       String?                   @map("resolution_comment") @db.Text
+  resolvedById            Int?                      @map("resolved_by_id") @db.UnsignedInt
   // Soft-deletes are PROHIBITED for blocker reports (NNR-3, Section 8)
 
   // Relations
@@ -263,13 +262,13 @@ model Blocker {
 
 // 11. Cross-Department Authorizations (Requests, approvals, denials, and expirations)
 model CrossDeptAuthorization {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  requesterId             Int                       @map("requester_id")
-  targetUserId            Int                       @map("target_user_id") // The user whose labor is requested
-  departmentId            Int                       @map("department_id") // The department whose head must authorize
-  scope                   String                    // single-use, 7-day, 30-day, project-based
-  status                  String                    @default("pending") // pending, approved, denied, expired
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  requesterId             Int                       @map("requester_id") @db.UnsignedInt
+  targetUserId            Int                       @map("target_user_id") @db.UnsignedInt // The user whose labor is requested
+  departmentId            Int                       @map("department_id") @db.UnsignedInt // The department whose head must authorize
+  scope                   String                    @db.VarChar(50) // single-use, 7-day, 30-day, project-based
+  status                  String                    @default("pending") @db.VarChar(50) // pending, approved, denied, expired
   expiresAt               DateTime?                 @map("expires_at")
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
@@ -285,25 +284,25 @@ model CrossDeptAuthorization {
 
 // 12. Approval Chain Steps (Enterprise Approval Mode chain steps)
 model ApprovalChainStep {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  authRequestId           Int                       @map("auth_request_id")
-  approverRankLevel       Int                       @map("approver_rank_level")
-  status                  String                    @default("pending") // pending, approved, rejected
-  stepOrder               Int                       @map("step_order")
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  authRequestId           Int                       @map("auth_request_id") @db.UnsignedInt
+  approverRankLevel       Int                       @map("approver_rank_level") @db.UnsignedInt
+  status                  String                    @default("pending") @db.VarChar(50) // pending, approved, rejected
+  stepOrder               Int                       @map("step_order") @db.UnsignedInt
   actedAt                 DateTime?                 @map("acted_at")
-  comments                String?
+  comments                String?                   @db.Text
 
   @@map("approval_chain_steps")
 }
 
 // 13. Delegations (Temporary delegation records)
 model Delegation {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  delegatorId             Int                       @map("delegator_id")
-  delegateeId             Int                       @map("delegatee_id")
-  scope                   String                    // full, billing, tasks, configuration
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  delegatorId             Int                       @map("delegator_id") @db.UnsignedInt
+  delegateeId             Int                       @map("delegatee_id") @db.UnsignedInt
+  scope                   String                    @db.VarChar(255) // full, billing, tasks, configuration
   validFrom               DateTime                  @map("valid_from")
   validTo                 DateTime                  @map("valid_to")
   createdAt               DateTime                  @default(now()) @map("created_at")
@@ -318,11 +317,11 @@ model Delegation {
 
 // 14. Notifications (In-app notification queue)
 model Notification {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  recipientId             Int                       @map("recipient_id")
-  title                   String
-  message                 String
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  recipientId             Int                       @map("recipient_id") @db.UnsignedInt
+  title                   String                    @db.VarChar(255)
+  message                 String                    @db.Text
   isRead                  Boolean                   @default(false) @map("is_read")
   createdAt               DateTime                  @default(now()) @map("created_at")
 
@@ -335,13 +334,13 @@ model Notification {
 
 // 15. Audit Log (Immutable append-only audit trail)
 model AuditLog {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  actorId                 Int                       @map("actor_id") // The user who performed the action
-  action                  String                    // e.g. TASK_CREATE, TASK_REASSIGN
-  entityType              String                    @map("entity_type") // e.g. User, Task, Blocker
-  entityId                Int                       @map("entity_id")
-  metadata                String?                   // JSON metadata of the changes
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  actorId                 Int                       @map("actor_id") @db.UnsignedInt // The user who performed the action
+  action                  String                    @db.VarChar(255) // e.g. TASK_CREATE, TASK_REASSIGN
+  entityType              String                    @map("entity_type") @db.VarChar(100) // e.g. User, Task, Blocker
+  entityId                Int                       @map("entity_id") @db.UnsignedInt
+  metadata                String?                   @db.Text // JSON metadata of the changes
   createdAt               DateTime                  @default(now()) @map("created_at")
   // Soft-deletes are PROHIBITED for audit_log (NNR-2, Section 8)
 
@@ -354,14 +353,14 @@ model AuditLog {
 
 // 16. Task Templates (Reusable task template definitions)
 model TaskTemplate {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  title                   String
-  description             String
-  priority                String
-  roleLevelOffset         Int                       @map("role_level_offset") // target rank level to assign to
-  dueDateOffsetDays       Int                       @map("due_date_offset_days")
-  createdById             Int                       @map("created_by_id")
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  title                   String                    @db.VarChar(255)
+  description             String                    @db.Text
+  priority                String                    @db.VarChar(50)
+  roleLevelOffset         Int                       @map("role_level_offset") @db.UnsignedInt // target rank level to assign to
+  dueDateOffsetDays       Int                       @map("due_date_offset_days") @db.UnsignedInt
+  createdById             Int                       @map("created_by_id") @db.UnsignedInt
   createdAt               DateTime                  @default(now()) @map("created_at")
 
   // Relations
@@ -373,10 +372,10 @@ model TaskTemplate {
 
 // 17. Process Packages (Operational process package definitions)
 model ProcessPackage {
-  id                      Int                       @id @default(autoincrement())
-  tenantId                Int                       @map("tenant_id")
-  name                    String
-  description             String
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tenantId                Int                       @map("tenant_id") @db.UnsignedInt
+  name                    String                    @db.VarChar(255)
+  description             String                    @db.Text
   createdAt               DateTime                  @default(now()) @map("created_at")
 
   // Relations
@@ -387,8 +386,8 @@ model ProcessPackage {
 
 // 18. Platform Config (Platform-level configuration: version, superadmin settings)
 model PlatformConfig {
-  id                      Int                       @id @default(autoincrement())
-  systemVersion           String                    @default("5.0") @map("system_version")
+  id                      Int                       @id @default(autoincrement()) @db.UnsignedInt
+  systemVersion           String                    @default("5.0") @map("system_version") @db.VarChar(20)
   maintenanceMode         Boolean                   @default(false) @map("maintenance_mode")
   updatedAt               DateTime                  @default(now()) @updatedAt @map("updated_at")
 
