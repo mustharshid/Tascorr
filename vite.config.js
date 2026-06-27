@@ -4,7 +4,7 @@ import { resolve } from 'path';
 export default defineConfig({
   root: resolve(__dirname, 'src/client'),
   publicDir: resolve(__dirname, 'public'),
-  base: process.env.NODE_ENV === 'production' ? '/tascorr/' : '/',
+  base: '/',
   build: {
     outDir: resolve(__dirname, 'dist/client'),
     emptyOutDir: true,
